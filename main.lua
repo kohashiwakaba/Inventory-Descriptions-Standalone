@@ -4,11 +4,10 @@ if not EID or EIDKR then
 	return
 end
 
-wakaba = wakaba or {}
---[[ if wakaba._InventoryDesc then
+-- 와카바 모드 적용 시 충돌 방지를 위해 로드 배제
+if _wakaba then return end
 
-	return 
-end ]]
+wakaba = wakaba or {}
 
 --local render = include("RenderLib")
 wakaba._InventoryDesc = RegisterMod("Inventory Descriptions", 1)
