@@ -1,53 +1,20 @@
-if not EID or EIDKR then
-	print("Inventory Descriptions reqires External Item Description")
-	print("Check mod desctiption for more info")
-	return
-end
 
--- 와카바 모드 적용 시 충돌 방지를 위해 로드 배제
+--- STANDALONE OR IMPORTED MODS MUST INCLUDE THIS LINE FOR MOD CONFLIT PREVENTATION
 if _wakaba then return end
 
-wakaba = wakaba or {}
+if not REPENTANCE then return end
+if not EID then return end
+if EIDKR then return end
 
---local render = include("RenderLib")
-wakaba._InventoryDesc = RegisterMod("Inventory Descriptions", 1)
-wakaba._InventoryDesc.defaultItems = {
-	[PlayerType.PLAYER_LAZARUS] = {CollectibleType.COLLECTIBLE_LAZARUS_RAGS},
-	[PlayerType.PLAYER_LAZARUS2] = {CollectibleType.COLLECTIBLE_ANEMIC},
-	--[PlayerType.PLAYER_THELOST] = {CollectibleType.COLLECTIBLE_HOLY_MANTLE},
-	[PlayerType.PLAYER_LILITH] = {CollectibleType.COLLECTIBLE_INCUBUS},
-	[PlayerType.PLAYER_SAMSON_B] = {CollectibleType.COLLECTIBLE_BERSERK},
-	[PlayerType.PLAYER_AZAZEL_B] = {CollectibleType.COLLECTIBLE_HEMOPTYSIS},
-	[PlayerType.PLAYER_LILITH_B] = {CollectibleType.COLLECTIBLE_GELLO},
-}
-wakaba._InventoryDesc.collectibleBlacklist = {
-}
+local game = Game()
+local _debug = false
 
-local function has_value (tab, val)
-  for index, value in ipairs(tab) do
-    if value == val then
-      return true
-    end
-  end
-  return false
-end
+local idesc = RegisterMod("Inventory Descriptions", 1)
+InventoryDescriptions = idesc
 
-if not wakaba.LinkCollectibleForCharacter then
-	function wakaba:LinkCollectibleForCharacter(playerType, collectibleType)
-		if not playerType or not collectibleType then return end
-		if not wakaba._InventoryDesc.defaultItems[playerType] then
-			wakaba._InventoryDesc.defaultItems[playerType] = {}
-		end
-		if not has_value(wakaba._InventoryDesc.defaultItems[playerType], collectibleType) then
-			table.insert(	wakaba._InventoryDesc.defaultItems[playerType], collectibleType)
-		end
-	end
-end
+idesc.version = "v1.99"
+idesc.intversion = 19900
 
-local idesc = wakaba._InventoryDesc
-INVDESC = {}
-idesc.version = "v0.1 2022.02.14"
-idesc.intversion = 1000
 idesc.BackgroundSprite = Sprite()
 idesc.BackgroundSprite:Load("gfx/ui/wakaba_idesc_menu.anm2", true)
 idesc.BackgroundSprite:SetFrame("Idle",0)
@@ -56,236 +23,99 @@ idesc.IconBgSprite = Sprite()
 idesc.IconBgSprite:Load("gfx/ui/wakaba_idesc_menu.anm2", true)
 idesc.IconBgSprite:SetFrame("ItemIcon",0)
 
-idesc.descriptions = {}
-idesc.descriptions["en_us"] = {}
-idesc.descriptions["en_us"].curses = {
-	[-1] = {
-		icon = "Blank",
-		name = "<Curse not found(or modded curse)>",
-	},
-	[LevelCurse.CURSE_OF_DARKNESS] = {
-		icon = "CurseDarkness",
-		name = "Curse of Darkenss",
-		description = "The floor is much darker, and is only barely lit by the Isaac's natural aura"
-		.. "#Occasionally rooms will be filled with swirling clouds of what could be fireflies or glowing motes of dust"
-		.. "#Fire, explosions, and lasers will all cast light as normal, as will red creep"
-		.. "",
-		seedeffect = SeedEffect.SEED_PERMANENT_CURSE_DARKNESS,
-	},
-	[LevelCurse.CURSE_OF_LABYRINTH] = {
-		icon = "CurseLabyrinth",
-		name = "Curse of the Labyrinth",
-		description = "Appears only on the first floor of a chapter"
-		.. "#Makes the floor an XL floor, which contains two Boss Rooms, two items and counts as two floors"
-		.. "#!!! Only Boss/Treasure rooms are doubled. Other special rooms still contains as in single floor"
-		.. "#Both Treasure Room doors will be unlocked on first floor"
-		.. "#This curse cannot be removed by {{Collectible260}}Black Candle"
-		.. "",
-		seedeffect = SeedEffect.SEED_PERMANENT_CURSE_LABYRINTH,
-	},
-	[LevelCurse.CURSE_OF_THE_LOST] = {
-		icon = "CurseLost",
-		name = "Curse of the Lost",
-		description = "Removes the map from the HUD"
-		.. "#Same effect as the Amnesia pill"
-		.. "#Also increases the possible total room count of the current floor to the size of the next floor"
-		.. "#Can be removed by {{Collectible260}}Black Candle, but increased rooms do not disappear"
-		.. "",
-		seedeffect = SeedEffect.SEED_PERMANENT_CURSE_LOST,
-	},
-	[LevelCurse.CURSE_OF_THE_UNKNOWN] = {
-		icon = "CurseUnknown",
-		name = "Curse of The Unknown",
-		description = ""
-		.. "#Removes Isaac's health from the HUD, leaving the player unable to see how many hearts remain of any kind"
-		.. "#Health will still be tracked as normal, including Soul/Black/Eternal Hearts, Holy Mantle Shield, and Extra Lives"
-		.. "#When Isaac is down to half a heart, it is still marked by urine when entering a room"
-		.. "",
-		seedeffect = SeedEffect.SEED_PERMANENT_CURSE_UNKNOWN,
-	},
-	[LevelCurse.CURSE_OF_THE_CURSED] = {
-		icon = "CurseCursed",
-		name = "Curse of The Cursed",
-		description = "Changes normal doors into cursed doors"
-		.. "#Due to mechanism of Cursed doors, Isaac takes damage regardless of flight"
-		.. "",
-		seedeffect = SeedEffect.SEED_PERMANENT_CURSE_CURSED,
-	},
-	[LevelCurse.CURSE_OF_MAZE] = {
-		icon = "CurseMaze",
-		name = "Curse of The Maze",
-		description = "Entering a new room (including teleporting) will occasionally take Isaac to the wrong room"
-		.. ", with a screen-shake and sound effect to indicate the jump"
-		.. "#Occasionally, discovered rooms can swap contents, without a screen-shake or sound effect"
-		.. "",
-		seedeffect = SeedEffect.SEED_PERMANENT_CURSE_MAZE,
-	},
-	[LevelCurse.CURSE_OF_BLIND] = {
-		icon = "CurseBlind",
-		name = "Curse of The Blind",
-		description = "All items are replaced with a question mark and are not revealed until they are picked up"
-		.. "",
-		seedeffect = SeedEffect.SEED_PERMANENT_CURSE_BLIND,
-	},
-	[LevelCurse.CURSE_OF_GIANT] = {
-		icon = "CurseGiant",
-		name = "Curse of the Giant",
-		description = "Combines normal sized room into 2x2, 1x2, 2x1 or L-shaped rooms"
-		.. "#Narrow rooms are not affected"
-		.. "#This curse cannot be removed by {{Collectible260}}Black Candle"
-		.. "",
-	},
+---@class InventoryDescEntries
+---@field Entries InventoryDescEntry[]
+
+---@class InventoryDescEntry
+---@field RenderType InventoryDescType
+---@field Type EntityType
+---@field Variant integer
+---@field SubType integer
+---@field AllowModifiers boolean|function
+---@field Lemegeton boolean
+---@field Frame integer|function
+---@field Icon string|function
+---@field Color string|function
+---@field LeftIcon string|function
+---@field ExtraIcon string|function
+---@field IconRenderOffset Vector
+---@field ListPrimaryTitle string|function
+---@field ListSecondaryTitle string|function
+
+---@enum InventoryDescType
+local idescEntryType = {
+	PLAYER = "players",
+	CURSE = "curses",
+	COLLECTIBLE = "collectibles",
+	TRINKET = "trinkets",
+	CARD = "cards",
+	PILL = "pills",
 }
-idesc.descriptions["ko_kr"] = {}
-idesc.descriptions["ko_kr"].curses = {
-	[-1] = {
-		icon = "Blank",
-		name = "<저주를 찾을 수 없음(혹은 모드로 추가된 저주)>",
-	},
-	[LevelCurse.CURSE_OF_DARKNESS] = {
-		icon = "CurseDarkness",
-		name = "어둠의 저주",
-		description = "캐릭터 주변을 제외한 모든 부분이 매우 어두워집니다."
-		.. "#일부 방에서는 반딧불이 나타나 방의 일부분을 밝혀줍니다."
-		.. "#불, 폭발, 레이저, 장판은 발광 효과가 적용되어 주위를 밝혀줍니다."
-		.. "",
-		seedeffect = SeedEffect.SEED_PERMANENT_CURSE_DARKNESS,
-	},
-	[LevelCurse.CURSE_OF_LABYRINTH] = {
-		icon = "CurseLabyrinth",
-		name = "미궁의 저주",
-		description = "!!! 챕터 1 ~ 4의 홀수 층에서만 발동"
-		.. "#2개의 스테이지를 하나로 합쳐 하나의 XL 스테이지로 만듭니다."
-		.. "#!!! 보스방/보물방의 갯수만 2개로 늘어나며 나머지 특수방은 스테이지 하나인 것으로 취급됩니다."
-		.. "#Basement/Cellar/Burning Basement XL 스테이지에서는 두 보물방 모두 열쇠를 필요로 하지 않습니다."
-		.. "#이 저주는 {{Collectible260}}Black Candle 아이템으로도 제거할 수 없습니다."
-		.. "",
-		seedeffect = SeedEffect.SEED_PERMANENT_CURSE_LABYRINTH,
-	},
-	[LevelCurse.CURSE_OF_THE_LOST] = {
-		icon = "CurseLost",
-		name = "길 잃은 자의 저주",
-		description = "HUD상에서 지도가 표시되지 않습니다."
-		.. "#맵의 크기가 한 단계 더 커집니다."
-		.. "#{{Collectible260}}Black Candle 아이템 획득 시 지도만 다시 표시되며, 기존의 늘어난 방 갯수는 그대로 유지됩니다."
-		.. "",
-		seedeffect = SeedEffect.SEED_PERMANENT_CURSE_LOST,
-	},
-	[LevelCurse.CURSE_OF_THE_UNKNOWN] = {
-		icon = "CurseUnknown",
-		name = "미지의 저주",
-		description = ""
-		.. "#현재 체력, Holy Mantle 보호막 여부, 그리고 남은 목숨 수가 HUD상에서 표시되지 않습니다."
-		.. "#실제 체력 자체는 보이지만 않을 뿐, 일반적인 상황과 동일하게 작동합니다."
-		.. "",
-		seedeffect = SeedEffect.SEED_PERMANENT_CURSE_UNKNOWN,
-	},
-	[LevelCurse.CURSE_OF_THE_CURSED] = {
-		icon = "CurseCursed",
-		name = "저주받은 자의 저주",
-		description = "모든 일반 방의 문을 저주방의 문으로 바꿉니다."
-		.. "#저주방의 문은 현재 저주방에서 나가는 판정이 적용되어 비행 상태에서도 피해를 받습니다."
-		.. "",
-		seedeffect = SeedEffect.SEED_PERMANENT_CURSE_CURSED,
-	},
-	[LevelCurse.CURSE_OF_MAZE] = {
-		icon = "CurseMaze",
-		name = "미로의 저주",
-		description = "다른 방으로 이동하거나 텔레포트할 때 :#일정 확률로 화면이 흔들리면서 다른 방으로 이동하거나,"
-		.. "#일정 확률로 이미 클리어한 일반 방 2개의 위치를 서로 뒤바꿉니다."
-		.. "",
-		seedeffect = SeedEffect.SEED_PERMANENT_CURSE_MAZE,
-	},
-	[LevelCurse.CURSE_OF_BLIND] = {
-		icon = "CurseBlind",
-		name = "눈 먼 자의 저주",
-		description = "모든 아이템이 빨간색 물음표로 표시되며 아이템을 집기 전까지 확인할 수 없습니다."
-		.. "",
-		seedeffect = SeedEffect.SEED_PERMANENT_CURSE_BLIND,
-	},
-	[LevelCurse.CURSE_OF_GIANT] = {
-		icon = "CurseGiant",
-		name = "거대한 자의 저주",
-		description = "일반 사이즈의 일반 방을 2x2, 1x2, 2x1 혹은 L자 방으로 합칩니다."
-		.. "#좁은 방은 영향이 없습니다."
-		.. "#이 저주는 {{Collectible260}}Black Candle 아이템으로도 제거할 수 없습니다."
-		.. "",
-	},
+InventoryDescType = idescEntryType
+
+---@enum InvDescEIDType
+local idescEIDType = {
+	PLAYER = -997,
+	CURSE = -998,
+	COLLECTIBLE = EntityType.ENTITY_PICKUP,
+	TRINKET = EntityType.ENTITY_PICKUP,
+	CARD = EntityType.ENTITY_PICKUP,
+	PILL = EntityType.ENTITY_PICKUP,
+}
+InvDescEIDType = idescEIDType
+
+---@enum InvDescEIDVariant
+local idescEIDVariant = {
+	DEFAULT = -1,
+}
+InvDescEIDVariant = idescEIDVariant
+
+local idescVar = -1
+
+idesc.options = {
+	listoffset = 200,
+	listkey = Keyboard.KEY_F5,
+	idleicon = 0,
+	selicon = 17,
+	lemegetonicon = 18,
+	q0icon = 20,
+	q1icon = 21,
+	q2icon = 22,
+	q3icon = 23,
+	q4icon = 24,
+	invplayerinfos = true,
+	invcurses = true,
+	invcollectibles = true,
+	invactives = true,
+	invtrinkets = true,
+	invpocketitems = true,
 }
 
-EID:addEntity(-998, -1, -1, "Curses")
-for lang, idescDescTables in pairs(idesc.descriptions) do
-	for itemID, itemdesc in pairs(idescDescTables.curses) do
-		EID:addEntity(-998, -1, itemID, itemdesc.name, itemdesc.description, lang)
+function idesc:init(continue)
+	local tempstate
+	if idesc:HasData() then
+		tempstate = json.decode(idesc:LoadData())
+		idesc.options = tempstate
+	end
+end
+idesc:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, idesc.init)
+
+function idesc:save(shouldSave)
+	if shouldSave then
+		idesc:SaveData(json.encode(idesc.options))
 	end
 end
 
+include("idesc_src.mod_config_menu")
 
-
-function INVDESC:LinkCollectibleForCharacter(playerType, collectibleType)
-	wakaba:LinkCollectibleForCharacter(playerType, collectibleType)
-end
-function INVDESC:AddCollectibleBlacklist(collectibleType)
-	if not collectibleType then return end
-	if not has_value(wakaba._InventoryDesc.collectibleBlacklist, collectibleType) then
-		table.insert(wakaba._InventoryDesc.collectibleBlacklist, collectibleType)
-	end
-end
-function INVDESC:RemoveCollectibleBlacklist(collectibleType)
-	if not collectibleType then return end
-	for i = 1, #wakaba._InventoryDesc.collectibleBlacklist do
-		if wakaba._InventoryDesc.collectibleBlacklist[i] == collectibleType then
-			table.remove(wakaba._InventoryDesc.collectibleBlacklist, i)
-		end
-	end
-end
-
-function INVDESC:TestCollectibles(min, max)
-	local items = {}
-	for i = min, max do
-		local config = Isaac.GetItemConfig()
-		if config:GetCollectible(i) then
-			table.insert(items, {
-				type = 5,
-				variant = 100,
-				subtype = i,
-			})
-		end
-	end
-	idesc.state.showList = true
-	local x,y = EID:getScreenSize().X, EID:getScreenSize().Y
-	idesc.state.listprops.screenx = x
-	idesc.state.listprops.screeny = y
-
-	idesc.state.lists.items = items
-	--idesc.state.lists.cards = cards
-	--idesc.state.lists.pills = pills
-
-	idesc.state.listprops.max = #items
-
-end
-
-if wakaba.version then
-	INVDESC:LinkCollectibleForCharacter(wakaba.PLAYER_WAKABA, wakaba.COLLECTIBLE_WAKABAS_BLESSING)
-	INVDESC:LinkCollectibleForCharacter(wakaba.PLAYER_WAKABA_B, wakaba.COLLECTIBLE_WAKABAS_NEMESIS)
-	INVDESC:LinkCollectibleForCharacter(wakaba.PLAYER_SHIORI, wakaba.COLLECTIBLE_BOOK_OF_SHIORI)
-	INVDESC:LinkCollectibleForCharacter(wakaba.PLAYER_SHIORI_B, wakaba.COLLECTIBLE_BOOK_OF_SHIORI)
-	INVDESC:LinkCollectibleForCharacter(wakaba.PLAYER_SHIORI_B, wakaba.COLLECTIBLE_MINERVA_AURA)
-	INVDESC:LinkCollectibleForCharacter(wakaba.PLAYER_TSUKASA, wakaba.COLLECTIBLE_LUNAR_STONE)
-	INVDESC:LinkCollectibleForCharacter(wakaba.PLAYER_TSUKASA, wakaba.COLLECTIBLE_CONCENTRATION)
-	INVDESC:LinkCollectibleForCharacter(wakaba.PLAYER_TSUKASA_B, wakaba.COLLECTIBLE_FLASH_SHIFT)
-	INVDESC:LinkCollectibleForCharacter(wakaba.PLAYER_TSUKASA_B, wakaba.COLLECTIBLE_ELIXIR_OF_LIFE)
-end
-
-
-local offset = (REPENTANCE and Options.HUDOffset) or 1
-
-local json = require("json")
-idesc.state = {
+--#region state data and functions
+local istate = {
 	showList = false,
 	maxCollectibleID = Isaac.GetItemConfig():GetCollectibles().Size - 1,
 	maxTrinketID = Isaac.GetItemConfig():GetTrinkets().Size - 1,
+	allowmodifiers = false,
 	lists = {
+		playernotes = {},
 		items = {},
 		curses = {},
 		collectibles = {},
@@ -295,221 +125,70 @@ idesc.state = {
 		pills = {},
 	},
 	listprops = {
-		screenx = EID:getScreenSize().X, 
+		screenx = EID:getScreenSize().X,
 		screeny = EID:getScreenSize().Y,
 		max = 1,
 		current = 1,
 		offset = 0,
+		allowmodifiers = false,
+		listonly = false,
 	},
+	savedtimer = nil,
+}
+idesc.state = istate
+--#endregion
+
+--#region defaults and blacklists
+idesc.defaults = {}
+idesc.defaults.collectibles = {
+	--[PlayerType.PLAYER_LAZARUS] = {CollectibleType.COLLECTIBLE_LAZARUS_RAGS},
+	--[PlayerType.PLAYER_LAZARUS2] = {CollectibleType.COLLECTIBLE_ANEMIC},
+	--[PlayerType.PLAYER_LILITH] = {CollectibleType.COLLECTIBLE_INCUBUS},
+	[PlayerType.PLAYER_SAMSON_B] = {CollectibleType.COLLECTIBLE_BERSERK},
+	[PlayerType.PLAYER_AZAZEL_B] = {CollectibleType.COLLECTIBLE_HEMOPTYSIS},
+	[PlayerType.PLAYER_LILITH_B] = {CollectibleType.COLLECTIBLE_GELLO},
+}
+idesc.defaults.trinkets = {
+	[PlayerType.PLAYER_BLUEBABY] = {TrinketType.TRINKET_LIL_LARVA},
 }
 
-local options = {
-	listoffset = 200,
-	listkey = Keyboard.KEY_F4,
-	idleicon = 0,
-	selicon = 17,
-	lemegetonicon = 18,
-	q0icon = 20,
-	q1icon = 21,
-	q2icon = 22,
-	q3icon = 23,
-	q4icon = 24,
+idesc.blacklists = {}
+idesc.blacklists.collectibles = {}
+idesc.blacklists.trinkets = {}
+
+idesc.entryset = {
+	collectibles = {Type = 5, Variant = 100},
+	trinkets = {Type = 5, Variant = 350},
+	cards = {Type = 5, Variant = 300},
 }
 
-local KeyboardToString = {}
+--#endregion
+
+--#region local functions and variables
+
+local kts = {}
 
 for key,num in pairs(Keyboard) do
 
 	local keyString = key
-	
+
 	local keyStart, keyEnd = string.find(keyString, "KEY_")
 	keyString = string.sub(keyString, keyEnd+1, string.len(keyString))
-	
+
 	keyString = string.gsub(keyString, "_", " ")
-	
-	KeyboardToString[num] = keyString
-	
-end
 
-local function getMaxCurseId(curse)
-	local maxloop = 0
-	while curse > 0 do
-		maxloop = maxloop + 1
-		curse = curse // 2
-	end
-	return maxloop
-end
-
-function idesc:SetCurrentItemLists()
-	local items = {}
-	local currCurse = Game():GetLevel():GetCurses()
-	local curses = {}
-	local collectibles = {}
-	local lemegetonwisps = {}
-	local trinkets = {}
-	local cards = {}
-	local pills = {}
-	local currItemNo = 1
-	for curseId = 0, getMaxCurseId(currCurse) do
-		if 1 << curseId & currCurse > 0 then
-			table.insert(curses, 1 << curseId)
-			table.insert(items, {
-				type = -998,
-				variant = -1,
-				subtype = 1 << curseId,
-			})
-		end
-	end
-	for itemId = 1, idesc.state.maxCollectibleID do
-		for i = 0, Game():GetNumPlayers() - 1 do
-			local player = Isaac.GetPlayer(i)
-			local playerType = player:GetPlayerType()
-			if not has_value(collectibles, itemId) 
-			and not has_value(wakaba._InventoryDesc.collectibleBlacklist, itemId)
-			and (player:HasCollectible(itemId, true) or (wakaba._InventoryDesc.defaultItems[playerType] and has_value(wakaba._InventoryDesc.defaultItems[playerType], itemId))) then
-				table.insert(collectibles, itemId)
-				table.insert(items, {
-					type = 5,
-					variant = 100,
-					subtype = itemId,
-				})
-			end
-		end
-	end
-	for itemId = 1, idesc.state.maxTrinketID do
-		for i = 0, Game():GetNumPlayers() - 1 do
-			local player = Isaac.GetPlayer(i)
-			if not has_value(trinkets) and player:HasTrinket(itemId) then
-				table.insert(trinkets, itemId)
-				table.insert(items, {
-					type = 5,
-					variant = 350,
-					subtype = itemId,
-				})
-			end
-		end
-	end
-	local wisps = Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.ITEM_WISP, -1, false, false)
-	for i, e in ipairs(wisps) do
-		if not has_value(collectibles, e.SubType) 
-		and not has_value(lemegetonwisps, e.SubType) 
-		and not has_value(wakaba._InventoryDesc.collectibleBlacklist, e.SubType)
-		then
-			table.insert(lemegetonwisps, e.SubType)
-			table.insert(items, {
-				type = 5,
-				variant = 100,
-				subtype = e.SubType,
-				lemegeton = true,
-			})
-		end
-	end
-
-	idesc.state.lists.items = items
-	--idesc.state.lists.cards = cards
-	--idesc.state.lists.pills = pills
-
-	idesc.state.listprops.max = #items
-
+	kts[num] = keyString
 
 end
 
-local function getListCount()
-	local x, y = EID:getScreenSize().X, EID:getScreenSize().Y
-	local validcount = math.ceil((y - offset * 72) / ((EID.lineHeight + 1) * 2))
-	return validcount
+local inputready = true
+
+local function getOffset()
+	return Options.HUDOffset or 1
 end
 
-local function resetList()
-	idesc.state.showList = false
-	idesc.state.listprops.screenx = x
-	idesc.state.listprops.screeny = y
-	idesc.state.listprops.offset = 0
-	idesc.state.listprops.current = 1
-	idesc.state.listprops.max = 1
-	EID:hidePermanentText()
-	for i=0, Game():GetNumPlayers()-1 do
-
-		local player = Isaac.GetPlayer(i)
-		local data = player:GetData()
-
-		--enable player controls
-		if data.InvDescPlayerPosition then
-			data.InvDescPlayerPosition = nil
-		end
-		if data.InvDescPlayerControlsDisabled then
-			player.ControlsEnabled = true
-			data.InvDescPlayerControlsDisabled = false
-		end
-
-	end
+local function initList()
 end
-
-local function onUpdate(player)
-	if Input.IsButtonTriggered(options.listkey, 0) then
-		idesc:SetCurrentItemLists()
-		if idesc.state.listprops.max <= 0 then
-			return
-		end
-		idesc.state.showList = not idesc.state.showList
-		local x,y = EID:getScreenSize().X, EID:getScreenSize().Y
-		idesc.state.listprops.screenx = x
-		idesc.state.listprops.screeny = y
-		if idesc.state.showList then
-		else
-			resetList()
-		end
-	end
-	if idesc.state.showList then
-		if Input.IsButtonTriggered(Keyboard.KEY_ESCAPE, 0) or Input.IsActionTriggered(ButtonAction.ACTION_PAUSE, 0) then
-			resetList()
-			return
-		end
-		local listcount = getListCount()
-		local listprops = idesc.state.listprops
-		if Input.IsActionTriggered(ButtonAction.ACTION_SHOOTUP, player.ControllerIndex or 0) then
-			idesc.state.listprops.current = listprops.current - 1
-			if listprops.current - listprops.offset < 2 and listprops.offset > 0 then
-				idesc.state.listprops.offset = listprops.offset - 1
-			end
-			if listprops.current <= 0 then
-				idesc.state.listprops.current = listprops.max
-				idesc.state.listprops.offset = (listprops.max - listcount) > 0 and listprops.max - listcount or 0
-			end
-		elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTLEFT, player.ControllerIndex or 0) then
-			idesc.state.listprops.current = listprops.current - listcount
-			idesc.state.listprops.offset = listprops.offset - listcount
-			if listprops.offset < 0 then
-				idesc.state.listprops.offset = 0
-			end
-			if listprops.current <= 0 then
-				idesc.state.listprops.current = 1
-				idesc.state.listprops.offset = 0
-			end
-		elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTDOWN, player.ControllerIndex or 0) then
-			idesc.state.listprops.current = listprops.current + 1
-			if listprops.current - listprops.offset > (listcount - 2) and listprops.max - listprops.offset > listcount then
-				idesc.state.listprops.offset = listprops.offset + 1
-			end
-			if listprops.current > listprops.max then
-				idesc.state.listprops.current = 1
-				idesc.state.listprops.offset = 0
-			end
-		elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTRIGHT, player.ControllerIndex or 0) and (listprops.current + listcount) < listprops.max then
-			idesc.state.listprops.current = listprops.current + listcount
-			idesc.state.listprops.offset = listprops.offset + listcount
-			if listprops.max - listprops.offset < listcount then
-				idesc.state.listprops.current = listprops.current - (listcount - (listprops.max - listprops.offset))
-				idesc.state.listprops.offset = listprops.max - listcount
-			end
-			if listprops.current > listprops.max then
-				idesc.state.listprops.current = listprops.max
-				idesc.state.listprops.offset = listprops.max - listcount
-			end
-		end
-	end
-end
-idesc:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, onUpdate)
 
 local function isDiff(x, y, x2, y2)
 	if math.ceil(x / 1) ~= math.ceil(x2 / 1) then
@@ -521,330 +200,860 @@ local function isDiff(x, y, x2, y2)
 	return false
 end
 
+local function getListCount()
+	local x = EID:getScreenSize().X
+	local y = EID:getScreenSize().Y
+	local validcount = math.ceil((y - getOffset() * 72) / ((EID.lineHeight + 1) * 2))
+	return validcount
+end
 
-local function onRender()
+local function merge(t1, t2)
+	for k,v in ipairs(t2) do
+		 table.insert(t1, v)
+	end
+	return t1
+end
+
+local function has (tab, val)
+	for index, value in ipairs(tab) do
+		if value == val then
+			return true
+		end
+	end
+	return false
+end
+
+local function getMaxCurseId(curse)
+	local maxloop = 0
+	while curse > 0 do
+		maxloop = maxloop + 1
+		curse = curse // 2
+	end
+	return maxloop
+end
+
+--#endregion
+
+--#region basic api functions
+
+function idesc:addDefault(category, target, entry)
+	if not idesc.defaults[category] then
+		idesc.defaults[category] = {}
+	end
+	if not idesc.defaults[category][target] then
+		idesc.defaults[category][target] = {}
+	end
+	table.insert(idesc.defaults[category][target], entry)
+end
+
+function idesc:removeDefault(category, target, entry)
+end
+
+function idesc:addBlacklist(category, target, entry)
+	if not idesc.blacklists[category] then
+		idesc.blacklists[category] = {}
+	end
+	if not idesc.blacklists[category][target] then
+		idesc.blacklists[category][target] = {}
+	end
+	table.insert(idesc.blacklists[category][target], entry)
+end
+
+function idesc:removeBlacklist(category, target, entry)
+end
+
+--#endregion
+
+
+--#region insert descriptions here
+
+idesc.descriptions = {}
+--example. check idesc_src/descriptions.lua
+include("idesc_src.descriptions.en_us")
+include("idesc_src.descriptions.ko_kr")
+
+---Recommended to manage descriptions into external files / 별도의 설명 파일에서 관리하는 것을 추천
+--[[
+	- Adding player descriptions / 플레이어 설명 추가
+	local playerType = player:GetPlayerType()
+	EID:addEntity(InvDescEIDType.PLAYER, InvdescEIDVariant.DEFAULT, playerType, "PlayerName", "Player Descriptions", "en_us")
+]]
+--[[
+	- Adding curse descriptions / 저주 설명 추가
+	local curse = 1 << (Isaac.GetCurseIdByName("Curse of Flames!") - 1)
+	EID:addEntity(InvDescEIDType.CURSE, InvdescEIDVariant.DEFAULT, curse, "CurseName", "Curse Descriptions", "en_us")
+	
+	- Adding curse icons, if available / 저주 아이콘 추가
+	- "CurseCustom" is used as "{{CurseCustom}}" on EID descriptions
+	local curse = 1 << (Isaac.GetCurseIdByName("Curse of Flames!") - 1)
+	EID:AddIconToObject(InvDescEIDType.CURSE, InvdescEIDVariant.DEFAULT, curse, "CurseCustom")
+]]
+
+--#endregion
+
+--#region link description here
+
+-- Default item links for characters
+-- Innate items through Hidden Item Manager are not needed to link.
+-- Only items that not detectable for player:HasCollectible() are needed to link.
+-- idesc:addDefault(idescEntryType.COLLECTIBLE, PlayerType.PLAYER_ISAAC, CollectibleType.COLLECTIBLE_SAD_ONION)
+-- idesc:addDefault(idescEntryType.TRINKET, PlayerType.PLAYER_ISAAC, TrinketType.TRINKET_SWALLOWED_PENNY)
+
+-- 캐릭터별 기본 아이템 링크
+-- Hidden Item Manager로 추가된 내장 패시브는 불필요,
+-- 'lua 상으로 해당 패시브를 소지하지 않는 판정'일 때만 추가
+-- 예시 :	와카바 모드의 축복은 별개로 구현되어 있는 능력이라 링크가 필요하지만,
+--				player:HasCollectible로 감지되는 히든 능력의 경우 자동으로 추가되므로 링크 불필요
+-- 모드 서순 고려하여 REPENTOGON 사용 시 ModCallbacks.MC_POST_MODS_LOADED에, 미사용 시 ModCallbacks.MC_POST_GAME_STARTED에 추가
+--[[ 
+local linked = false
+function wakaba:LinkWakabaDefaults()
+	if linked then return end
+	idesc:addDefault(idescEntryType.COLLECTIBLE, wakaba.Enums.Players.WAKABA, wakaba.Enums.Collectibles.WAKABAS_BLESSING)
+	idesc:addDefault(idescEntryType.COLLECTIBLE, wakaba.Enums.Players.WAKABA_B, wakaba.Enums.Collectibles.WAKABAS_NEMESIS)
+	idesc:addDefault(idescEntryType.COLLECTIBLE, wakaba.Enums.Players.SHIORI, wakaba.Enums.Collectibles.BOOK_OF_SHIORI)
+	idesc:addDefault(idescEntryType.COLLECTIBLE, wakaba.Enums.Players.SHIORI_B, wakaba.Enums.Collectibles.BOOK_OF_SHIORI)
+	idesc:addDefault(idescEntryType.COLLECTIBLE, wakaba.Enums.Players.SHIORI_B, wakaba.Enums.Collectibles.MINERVA_AURA)
+	idesc:addDefault(idescEntryType.COLLECTIBLE, wakaba.Enums.Players.TSUKASA, wakaba.Enums.Collectibles.LUNAR_STONE)
+	idesc:addDefault(idescEntryType.COLLECTIBLE, wakaba.Enums.Players.TSUKASA, wakaba.Enums.Collectibles.CONCENTRATION)
+	idesc:addDefault(idescEntryType.COLLECTIBLE, wakaba.Enums.Players.TSUKASA_B, wakaba.Enums.Collectibles.FLASH_SHIFT)
+	idesc:addDefault(idescEntryType.COLLECTIBLE, wakaba.Enums.Players.TSUKASA_B, wakaba.Enums.Collectibles.ELIXIR_OF_LIFE)
+	idesc:addDefault(idescEntryType.COLLECTIBLE, wakaba.Enums.Players.TSUKASA_B, wakaba.Enums.Collectibles.MURASAME)
+	idesc:addDefault(idescEntryType.COLLECTIBLE, wakaba.Enums.Players.RICHER, wakaba.Enums.Collectibles.RABBIT_RIBBON)
+	idesc:addDefault(idescEntryType.COLLECTIBLE, wakaba.Enums.Players.RICHER_B, wakaba.Enums.Collectibles.RABBIT_RIBBON)
+	idesc:addDefault(idescEntryType.COLLECTIBLE, wakaba.Enums.Players.RICHER_B, wakaba.Enums.Collectibles.WINTER_ALBIREO)
+	idesc:addDefault(idescEntryType.COLLECTIBLE, wakaba.Enums.Players.RIRA, wakaba.Enums.Collectibles.CHIMAKI)
+	linked = true
+end
+
+if REPENTOGON then
+	wakaba:AddCallback(ModCallbacks.MC_POST_MODS_LOADED, wakaba.LinkWakabaDefaults)
+else
+	wakaba:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, wakaba.LinkWakabaDefaults)
+end
+ ]]
+--#endregion
+
+--#region
+
+--#endregion
+
+--#region
+
+---@return InventoryDescEntry[]
+function idesc:getPlayers()
+	local ei = {}
+	local entries = {} ---@type InventoryDescEntry[]
+	for i = 0, game:GetNumPlayers() - 1 do
+		local player = Isaac.GetPlayer(i)
+		local entryIndex = player:GetPlayerType()
+		if not has(ei, entryIndex) then
+			---@type InventoryDescEntry
+			local entry = {
+				Type = idescEIDType.PLAYER,
+				Variant = idescVar,
+				SubType = entryIndex,
+				Icon = "{{Player"..entryIndex.."}}",
+				IconRenderOffset = Vector(-16.5, 1),
+			}
+			table.insert(entries, entry)
+			table.insert(ei, entryIndex)
+		end
+	end
+	return entries
+end
+
+function idesc:getDefaults()
+	local ei = {}
+	local entries = {} ---@type InventoryDescEntry[]
+	for i = 0, game:GetNumPlayers() - 1 do
+		local player = Isaac.GetPlayer(i)
+		local entryIndex = player:GetPlayerType()
+		if not has(ei, entryIndex) then
+			table.insert(ei, entryIndex)
+		end
+	end
+	for category, datas in pairs(idesc.defaults) do
+		local entrySet = idesc.entryset[category]
+		local ci = {}
+		for _, eix in ipairs(ei) do
+			if datas[eix] then
+				for _, v in ipairs(datas[eix]) do
+					if not has(ci, v) then
+						---@type InventoryDescEntry
+						local entry = {
+							Type = entrySet.Type,
+							Variant = entrySet.Variant,
+							SubType = v,
+						}
+						table.insert(entries, entry)
+						table.insert(ci, v)
+					end
+				end
+			end
+		end
+	end
+	return entries
+end
+
+---@return InventoryDescEntry[]
+function idesc:getHeldActives()
+	local ei = {}
+	local entries = {} ---@type InventoryDescEntry[]
+	for i = 0, game:GetNumPlayers() - 1 do
+		local player = Isaac.GetPlayer(i)
+		for s = 0, 3 do
+			local entryIndex = player:GetActiveItem(s)
+			if entryIndex > 0 and not has(ei, entryIndex) then
+				local quality = tonumber(EID.itemConfig:GetCollectible(tonumber(entryIndex)).Quality)
+				---@type InventoryDescEntry
+				local entry = {
+					Type = idescEIDType.COLLECTIBLE,
+					Variant = PickupVariant.PICKUP_COLLECTIBLE,
+					SubType = entryIndex,
+					Frame = function()
+						return idesc:getOptions("q"..quality.."icon")
+					end,
+					LeftIcon = "{{Quality"..quality.."}}",
+				}
+				table.insert(entries, entry)
+				table.insert(ei, entryIndex)
+			end
+		end
+	end
+	return entries
+end
+
+---@return InventoryDescEntry[]
+function idesc:getHeldCards()
+	local ei = {}
+	local entries = {} ---@type InventoryDescEntry[]
+	for i = 0, game:GetNumPlayers() - 1 do
+		local player = Isaac.GetPlayer(i)
+		for s = 0, 3 do
+			local entryIndex = player:GetCard(s)
+			if entryIndex > 0 and not has(ei, entryIndex) then
+				---@type InventoryDescEntry
+				local entry = {
+					Type = idescEIDType.CARD,
+					Variant = PickupVariant.PICKUP_TAROTCARD,
+					SubType = entryIndex,
+				}
+				table.insert(entries, entry)
+				table.insert(ei, entryIndex)
+			end
+		end
+	end
+	return entries
+end
+
+---@return InventoryDescEntry[]
+function idesc:getHeldPills()
+	local ei = {}
+	local entries = {} ---@type InventoryDescEntry[]
+	for i = 0, game:GetNumPlayers() - 1 do
+		local player = Isaac.GetPlayer(i)
+		for s = 0, 3 do
+			local entryIndex = player:GetPill(s)
+			if entryIndex > 0 and not has(ei, entryIndex) then
+				---@type InventoryDescEntry
+				local entry = {
+					Type = idescEIDType.PILL,
+					Variant = PickupVariant.PICKUP_PILL,
+					SubType = entryIndex,
+				}
+				table.insert(entries, entry)
+				table.insert(ei, entryIndex)
+			end
+		end
+	end
+	return entries
+end
+
+---@return InventoryDescEntry[]
+function idesc:getPassives()
+	local ei = {}
+	local entries = {} ---@type InventoryDescEntry[]
+	local passives = EID:GetAllPassiveItems()
+	for i = 0, game:GetNumPlayers() - 1 do
+		local player = Isaac.GetPlayer(i)
+		for _, entryIndex in ipairs(passives) do
+			if entryIndex > 0 and player:HasCollectible(entryIndex) and not has(ei, entryIndex) then
+				local quality = tonumber(EID.itemConfig:GetCollectible(tonumber(entryIndex)).Quality)
+				local modifiers = entryIndex == CollectibleType.COLLECTIBLE_BIRTHRIGHT
+				---@type InventoryDescEntry
+				local entry = {
+					Type = idescEIDType.COLLECTIBLE,
+					Variant = PickupVariant.PICKUP_COLLECTIBLE,
+					SubType = entryIndex,
+					AllowModifiers = modifiers,
+					Frame = function()
+						return idesc:getOptions("q"..quality.."icon")
+					end,
+					LeftIcon = "{{Quality"..quality.."}}",
+				}
+				table.insert(entries, entry)
+				table.insert(ei, entryIndex)
+			end
+		end
+	end
+	return entries
+end
+
+local trinketsAll = nil
+local function getAllTrinkets()
+	if trinketsAll then
+		return trinketsAll
+	end
+	trinketsAll = {}
+
+	for i = 1, Isaac.GetItemConfig():GetTrinkets().Size - 1 do
+		local config = EID.itemConfig:GetTrinket(i)
+		if config ~= nil then
+			table.insert(trinketsAll, i)
+		end
+	end
+	return trinketsAll
+end
+
+---@return InventoryDescEntry[]
+function idesc:getTrinkets()
+	local ei = {}
+	local entries = {} ---@type InventoryDescEntry[]
+	local trinkets = getAllTrinkets()
+	for i = 0, game:GetNumPlayers() - 1 do
+		local player = Isaac.GetPlayer(i)
+		for _, entryIndex in ipairs(trinkets) do
+			if entryIndex > 0 and player:HasTrinket(entryIndex) and not has(ei, entryIndex) then
+				---@type InventoryDescEntry
+				local entry = {
+					Type = idescEIDType.TRINKET,
+					Variant = PickupVariant.PICKUP_TRINKET,
+					SubType = entryIndex,
+				}
+				table.insert(entries, entry)
+				table.insert(ei, entryIndex)
+			end
+		end
+	end
+	return entries
+end
+
+---@return InventoryDescEntry[]
+function idesc:getItemWisps()
+	local ei = {}
+	local entries = {} ---@type InventoryDescEntry[]
+	local wisps = Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.ITEM_WISP, -1, false, false)
+	for _, e in ipairs(wisps) do
+		local entryIndex = e.SubType
+		if entryIndex > 0 and not has(ei, entryIndex) then
+			---@type InventoryDescEntry
+			local entry = {
+				Type = idescEIDType.COLLECTIBLE,
+				Variant = PickupVariant.PICKUP_COLLECTIBLE,
+				SubType = entryIndex,
+				Frame = function()
+					return idesc:getOptions("lemegetonicon")
+				end,
+				ExtraIcon = "{{Collectible"..CollectibleType.COLLECTIBLE_LEMEGETON.."}}",
+			}
+			table.insert(entries, entry)
+			table.insert(ei, entryIndex)
+		end
+	end
+	return entries
+end
+
+---@return InventoryDescEntry[]
+function idesc:getVirtuesWisps()
+	local ei = {}
+	local entries = {} ---@type InventoryDescEntry[]
+	local wisps = Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.WISP, -1, false, false)
+	for _, e in ipairs(wisps) do
+		local entryIndex = e.SubType
+		if entryIndex > 0 and not has(ei, entryIndex) then
+			---@type InventoryDescEntry
+			local entry = {
+				Type = idescEIDType.COLLECTIBLE,
+				Variant = PickupVariant.PICKUP_COLLECTIBLE,
+				SubType = entryIndex,
+				Frame = function()
+					return idesc:getOptions("lemegetonicon")
+				end,
+				ExtraIcon = "{{Collectible"..CollectibleType.COLLECTIBLE_BOOK_OF_VIRTUES.."}}",
+			}
+			table.insert(entries, entry)
+			table.insert(ei, entryIndex)
+		end
+	end
+	return entries
+end
+
+---@return InventoryDescEntry[]
+function idesc:getCurses()
+	local currCurse = game:GetLevel():GetCurses()
+	local entries = {} ---@type InventoryDescEntry[]
+	for curseId = 0, getMaxCurseId(currCurse) do
+		if 1 << curseId & currCurse > 0 then
+			---@type InventoryDescEntry
+			local entry = {
+				Type = idescEIDType.CURSE,
+				Variant = idescVar,
+				SubType = 1 << curseId,
+			}
+			table.insert(entries, entry)
+		end
+	end
+	return entries
+end
+
+--#endregion
+
+--#region
+function idesc:getOptions(optionKey, fallback)
+	return idesc.options[optionKey] or fallback
+end
+
+function idesc:setOptions(optionKey, value)
+	idesc.options[optionKey] = value
+end
+
+function idesc:getBasicEntries(init)
+	local entries = {}
+	entries = merge(entries, idesc:getPlayers())
+	entries = merge(entries, idesc:getDefaults())
+	entries = merge(entries, idesc:getCurses())
+	entries = merge(entries, idesc:getHeldActives())
+	entries = merge(entries, idesc:getHeldCards())
+	entries = merge(entries, idesc:getHeldPills())
+	entries = merge(entries, idesc:getPassives())
+	entries = merge(entries, idesc:getTrinkets())
+	entries = merge(entries, idesc:getItemWisps())
+	if init then
+		--istate.lists.items = entries
+		--istate.listprops.max = #entries
+	end
+	return entries
+end
+
+---@param entries InventoryDescEntry[]
+---@param stopTimer boolean
+function idesc:showEntries(entries, stopTimer, listOnly)
+	if #entries <= 0 then
+		return false
+	end
+	istate.lists.items = entries
+	istate.listprops.max = #entries
+	istate.showList = not istate.showList
+	local x,y = EID:getScreenSize().X, EID:getScreenSize().Y
+	istate.listprops.screenx = x
+	istate.listprops.screeny = y
+	istate.listprops.listonly = listOnly
+	return istate.showList
+end
+
+---@return InventoryDescEntry[]
+function idesc:currentEntries()
+	return istate.lists.items
+end
+
+function idesc:resetEntries()
+	local x,y = EID:getScreenSize().X, EID:getScreenSize().Y
+	istate.showList = false
+	istate.listprops.screenx = x
+	istate.listprops.screeny = y
+	istate.listprops.offset = 0
+	istate.listprops.current = 1
+	istate.listprops.max = 1
+	istate.listprops.listonly = false
+	EID:hidePermanentText()
+	for i=0, game:GetNumPlayers()-1 do
+		local player = Isaac.GetPlayer(i)
+		local data = player:GetData()
+		--enable player controls
+		data.InvDescPlayerPosition = nil
+		if data.InvDescPlayerControlsDisabled then
+			player.ControlsEnabled = true
+			data.InvDescPlayerControlsDisabled = false
+		end
+		istate.savedtimer = nil
+	end
+end
+
+function idesc:recalculateOffset()
+
+	local validcount = getListCount()
+	local listprops = istate.listprops
+	
+	local listOffset = listprops.offset
+	local entries = idesc:currentEntries()
+	local min = listOffset + 1
+	local max = math.min(listOffset + validcount, #entries)
+	local numEntries = #entries
+
+	if listprops.current > max then
+		istate.listprops.offset = listprops.offset + (listprops.current - listprops.offset - validcount + 2)
+	elseif listprops.offset + validcount > listprops.max then
+		istate.listprops.offset = listprops.max - validcount
+	end
+
+	local x,y = EID:getScreenSize().X, EID:getScreenSize().Y
+	istate.listprops.screenx = x
+	istate.listprops.screeny = y
+end
+
+--#endregion
+
+function idesc:Update(player)
+	local inputKey = idesc:getOptions("listkey", -1)
+	if inputKey == -1 then return end
+	if not inputready then
+		inputready = true
+		return
+	end
+
+	if Input.IsButtonTriggered(inputKey, 0) then
+		inputready = false
+		if Isaac.CountBosses() > 0 or Isaac.CountEnemies() > 0 then
+			return
+		end
+		local entries = idesc:getBasicEntries()
+		if idesc:showEntries(entries, true) then
+			istate.savedtimer = game.TimeCounter
+		else
+			idesc:resetEntries()
+		end
+	end
+
+	if istate.showList then
+		if Input.IsButtonTriggered(Keyboard.KEY_ESCAPE, 0) or Input.IsActionTriggered(ButtonAction.ACTION_PAUSE, 0) then
+			idesc:resetEntries()
+			return
+		end
+		local listcount = getListCount()
+		local listprops = istate.listprops
+		if Input.IsActionTriggered(ButtonAction.ACTION_SHOOTUP, player.ControllerIndex or 0) then
+			inputready = false
+			istate.listprops.current = listprops.current - 1
+			if listprops.current - listprops.offset < 2 and listprops.offset > 0 then
+				istate.listprops.offset = listprops.offset - 1
+			end
+			if listprops.current <= 0 then
+				istate.listprops.current = listprops.max
+				istate.listprops.offset = (listprops.max - listcount) > 0 and listprops.max - listcount or 0
+			end
+		elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTLEFT, player.ControllerIndex or 0) then
+			inputready = false
+			istate.listprops.current = listprops.current - listcount
+			istate.listprops.offset = listprops.offset - listcount
+			if listprops.offset < 0 then
+				istate.listprops.offset = 0
+			end
+			if listprops.current <= 0 then
+				istate.listprops.current = 1
+				istate.listprops.offset = 0
+			end
+		elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTDOWN, player.ControllerIndex or 0) then
+			inputready = false
+			istate.listprops.current = listprops.current + 1
+			if listprops.current - listprops.offset > (listcount - 2) and listprops.max - listprops.offset > listcount then
+				istate.listprops.offset = listprops.offset + 1
+			end
+			if listprops.current > listprops.max then
+				istate.listprops.current = 1
+				istate.listprops.offset = 0
+			end
+		elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTRIGHT, player.ControllerIndex or 0) and (listprops.current + listcount) < listprops.max then
+			inputready = false
+			istate.listprops.current = listprops.current + listcount
+			istate.listprops.offset = listprops.offset + listcount
+			if listprops.max - listprops.offset < listcount then
+				istate.listprops.current = listprops.current - (listcount - (listprops.max - listprops.offset))
+				istate.listprops.offset = listprops.max - listcount
+			end
+			if listprops.current > listprops.max then
+				istate.listprops.current = listprops.max
+				istate.listprops.offset = listprops.max - listcount
+			end
+		end
+	end
+end
+idesc:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, idesc.Update)
+
+function idesc:Render()
 	if ModConfigMenu and ModConfigMenu.IsVisible then
-		resetList()
+		idesc:resetEntries()
 		return
 	end
 
 	if Encyclopedia and DeadSeaScrollsMenu.IsOpen() then
-		resetList()
+		idesc:resetEntries()
 		return
 	end
 
-	if idesc.state.showList and not EID.CachingDescription then
+	if istate.showList and not EID.CachingDescription then
+		if not istate.listprops.listonly then
 
-		for i=0, Game():GetNumPlayers()-1 do
-
-			local player = Isaac.GetPlayer(i)
-			local data = player:GetData()
-
-			--freeze players and disable their controls
-			player.Velocity = Vector(0,0)
-
-			if not data.InvDescPlayerPosition then
-				data.InvDescPlayerPosition = player.Position
+			for i=0, game:GetNumPlayers()-1 do
+				local player = Isaac.GetPlayer(i)
+				local data = player:GetData()
+	
+				--freeze players and disable their controls
+				player.Velocity = Vector(0,0)
+	
+				if not data.InvDescPlayerPosition then
+					data.InvDescPlayerPosition = player.Position
+				end
+				player.Position = data.InvDescPlayerPosition
+				if not data.InvDescPlayerControlsDisabled then
+					player.ControlsEnabled = false
+					data.InvDescPlayerControlsDisabled = true
+				end
+	
+				--disable toggling revelations menu
+				if data.input and data.input.menu and data.input.menu.toggle then
+					data.input.menu.toggle = false
+				end
 			end
-			player.Position = data.InvDescPlayerPosition
-			if not data.InvDescPlayerControlsDisabled then
-				player.ControlsEnabled = false
-				data.InvDescPlayerControlsDisabled = true
-			end
-
-			--disable toggling revelations menu
-			if data.input and data.input.menu and data.input.menu.toggle then
-				data.input.menu.toggle = false
-			end
-
 		end
 
 		local validcount = getListCount()
-		local listprops = idesc.state.listprops
+		local offset = getOffset()
+		local listprops = istate.listprops
 		local x, y = EID:getScreenSize().X, EID:getScreenSize().Y
-		local x2, y2 = idesc.state.listprops.screenx, idesc.state.listprops.screeny
-		if isDiff(x, y, x2, y2) then
-			if listprops.current - listprops.offset > validcount then
-				idesc.state.listprops.offset = listprops.offset + (listprops.current - listprops.offset - validcount + 2)
-				if listprops.offset + validcount > listprops.max then
-					idesc.state.listprops.offset = listprops.max - validcount
-				end
-			end
+		local x2, y2 = listprops.screenx, listprops.screeny
 
-			--idesc.state.showList = false
-			--idesc.state.listprops.screenx = x
-			--idesc.state.listprops.screeny = y
-			--idesc.state.listprops.offset = 0
-			--idesc.state.listprops.current = 1
-			--idesc.state.listprops.max = 1
-			--EID:hidePermanentText()
-			--return
+		--창 크기 변경 시 발동
+		if isDiff(x, y, x2, y2) then
+			idesc:recalculateOffset()
 		end
-		--idesc.BackgroundSprite:Render(Vector(x, y) / 2, Vector(0,0), Vector(0,0))
+
 		local currentcursor = 1
-		local currentlist = {}
-		local desc = nil
-		for i = 1, validcount do
-			currentlist[i] = idesc.state.lists.items[listprops.offset + i]
-			if listprops.offset + i == listprops.current then
-				currentcursor = i
-				desc = EID:getDescriptionObj(currentlist[i].type, currentlist[i].variant, currentlist[i].subtype)
-				if currentlist[i].type == -998 then
-					lang = EID:getLanguage() or "en_us"
-					local entrytables = idesc.descriptions[lang] and idesc.descriptions[lang].curses or idesc.descriptions["en_us"].curses
-					if entrytables[currentlist[i].subtype] then
-						local entry = entrytables[currentlist[i].subtype]
-						desc.Name = "{{"..entry.icon.."}} "..entry.name
-						desc.Description = entry.description
-					else
-						local entry = entrytables[-1]
-						desc.Name = entry.name
-					end
-				end
-			end
-		end
-		EID:renderString("Current item list("..listprops.current.."/"..listprops.max..")", Vector(x - options.listoffset, 36-(EID.lineHeight*2)) - Vector(offset * 10, offset * -10), Vector(1,1), EID:getNameColor())
-		EID:renderString("Press ".. KeyboardToString[options.listkey].." again to exit", Vector(x - options.listoffset, 36-EID.lineHeight) - Vector(offset * 10, offset * -10), Vector(1,1), EID:getNameColor())
-		if not Input.IsActionPressed(ButtonAction.ACTION_MAP, EID.player.ControllerIndex) then
-			for i, v in pairs(currentlist) do
-				local obj = EID:getDescriptionObj(v.type, v.variant, v.subtype)
-				local extIcon = nil
-				if v.type == -998 then
-					lang = EID:getLanguage() or "en_us"
-					local entrytables = idesc.descriptions[lang] and idesc.descriptions[lang].curses or idesc.descriptions["en_us"].curses
-					if entrytables[currentlist[i].subtype] then
-						local entry = entrytables[currentlist[i].subtype]
-						obj.Name = entry.name
-						extIcon = "{{"..entry.icon.."}}"
-					else
-						local entry = entrytables[-1]
-						obj.Name = entry.name
-						extIcon = "{{"..entry.icon.."}}"
-					end
-				end
+
+		local optionsOffset = idesc:getOptions("listoffset")
+		local inputKey = idesc:getOptions("listkey", -1)
+
+		-- Render headers
+		EID:renderString("Current item list("..listprops.current.."/"..listprops.max..")", Vector(x - optionsOffset, 36-(EID.lineHeight*2)) - Vector(offset * 10, offset * -10), Vector(1,1), EID:getNameColor())
+		EID:renderString("Press ".. kts[inputKey].." again to exit", Vector(x - optionsOffset, 36-EID.lineHeight) - Vector(offset * 10, offset * -10), Vector(1,1), EID:getNameColor())
+
+		local listOffset = listprops.offset
+		local entries = idesc:currentEntries()
+		local min = listOffset + 1
+		local max = math.min(listOffset + validcount, #entries)
+		local numEntries = #entries
+		local selObj = nil
+		local selEntry = nil
+
+		if true then -- Render List
+
+			for ix = min, max do
+				local entry = entries[ix]
+				if not entry then break end
+				local isHighlighted = ix == listprops.current
+				local allowModifiers = type(entry.AllowModifiers) == "function" and entry.AllowModifiers() or entry.AllowModifiers;
+				local obj = EID:getDescriptionObj(entry.Type, entry.Variant, entry.SubType, nil, istate.allowmodifiers or allowModifiers)
+
+				if isHighlighted then selObj = obj; selEntry = entry end
+
+				local i = ix - min + 1
 
 				local height = EID.lineHeight
-				local renderpos = Vector(x - options.listoffset, 36 + ((i-1) * (height + 1) * 2)) - Vector(offset * 10, offset * -10)
+				local renderpos = Vector(x - optionsOffset, 36 + ((i-1) * (height + 1) * 2)) - Vector(offset * 10, offset * -10)
 				local iconrenderpos = renderpos + Vector(-23, ((height + 0) / 2) - 4)
 				local qtextrenderpos = renderpos + Vector(-33, (height / 2) + 1)
 				local textrenderpos = renderpos + Vector(0, 1)
-				local isModded = obj.ModName
-				local modIcon = isModded and EID.ModIndicator[obj.ModName].Icon
-				local color = i == currentcursor and EID:getColor("{{ColorGold}}", EID:getNameColor()) or EID:getNameColor()
-				local frameno = v.lemegeton == true and options.lemegetonicon or options.idleicon
-				frameno = i == currentcursor and options.selicon or frameno
+				local color = isHighlighted and EID:getColor("{{ColorGold}}", EID:getNameColor()) or EID:getNameColor()
+				local frameno = (type(entry.Frame) == "function" and entry.Frame() or entry.Frame) or idesc:getOptions("idleicon");
+				frameno = isHighlighted and idesc:getOptions("selicon") or frameno
 				idesc.IconBgSprite.Scale = Vector(EID.Scale / 3, EID.Scale / 3)
 				idesc.IconBgSprite.Color = Color(1, 1, 1, EID.Config["Transparency"], 0, 0, 0)
-				if v.type == -998 and extIcon then
-					idesc.IconBgSprite:SetFrame("ItemIcon",frameno)
-					idesc.IconBgSprite:Render(iconrenderpos, Vector(0,0), Vector(0,0))
-					EID:renderString(extIcon, renderpos + Vector(-18, (height / 2) + 1), Vector(1,1), color)
-				elseif v.variant == 100 then
-					if REPENTANCE and EID.Config["ShowQuality"] then
-						local quality = tonumber(EID.itemConfig:GetCollectible(tonumber(v.subtype)).Quality)
-						frameno = i == currentcursor and options.selicon or options["q"..quality.."icon"]
-						idesc.IconBgSprite:SetFrame("ItemIcon",frameno)
-						idesc.IconBgSprite:Render(iconrenderpos, Vector(0,0), Vector(0,0))
-						EID:renderString("{{Quality"..quality.."}}", qtextrenderpos, Vector(1,1), color)
-					end
-					EID:renderString("{{Collectible"..v.subtype.."}}", renderpos + Vector(-18, (height / 2) + 1), Vector(1,1), color)
-				elseif v.variant == 350 then
-					idesc.IconBgSprite:SetFrame("ItemIcon",frameno)
-					idesc.IconBgSprite:Render(iconrenderpos, Vector(0,0), Vector(0,0))
-					EID:renderString("{{Trinket"..v.subtype.."}}", renderpos + Vector(-18, (height / 2) + 1), Vector(1,1), color)
-				end
-				local curName = obj.Name
-				
-				if EID.Config["TranslateItemName"] ~= 2 then
-					local prevLanguage = EID.Config["Language"]
-					local curLanguage = EID:getLanguage()
-					if curLanguage ~= "en_us" then
-						EID.Config["Language"] = "en_us"
-						local englishName = desc.PermanentTextEnglish or EID:getObjectName(v.type, v.variant, v.subtype)
-						if v.type == -998 then
-							englishName = idesc.descriptions["en_us"].curses[v.subtype].name
-						end
-						EID.Config["Language"] = prevLanguage
-						if EID.Config["TranslateItemName"] == 1 then
-							curName = englishName
-						elseif EID.Config["TranslateItemName"] == 3 and curName ~= englishName then
-							curName = curName.." ("..englishName..")"
+
+				local extIcon = type(entry.Icon) == "function" and entry.Icon() or entry.Icon;
+				local leftIcon = type(entry.LeftIcon) == "function" and entry.LeftIcon() or entry.LeftIcon;
+				local extraIcon = type(entry.ExtraIcon) == "function" and entry.ExtraIcon() or entry.ExtraIcon;
+				local iconOffset = entry.IconRenderOffset or Vector(-18, 1)
+
+				-- 리스트 윗라인 (이름)
+				local primaryListName = type(entry.ListPrimaryTitle) == "function" and entry.ListPrimaryTitle() or entry.ListPrimaryTitle;
+				if not primaryListName then
+					local curName = obj.Name
+					if EID.Config["TranslateItemName"] ~= 2 then
+						local curLanguage = EID.Config["Language"]
+						if EID:getLanguage() ~= "en_us" then
+							EID.Config["Language"] = "en_us"
+							local englishName = EID:getObjectName(obj.ObjType, obj.ObjVariant, obj.ObjSubType)
+							EID.Config["Language"] = curLanguage
+							if EID.Config["TranslateItemName"] == 1 then
+								curName = englishName
+							elseif EID.Config["TranslateItemName"] == 3 and curName ~= englishName then
+								curName = curName.." ("..englishName..")"
+							end
 						end
 					end
+					primaryListName = curName
 				end
-				EID:renderString(curName, textrenderpos + Vector(0, isModded and 0 or (EID.lineHeight / 2)), Vector(1,1), color)
-				if isModded then
-					local rst = ""
-					rst = rst .. "{{"..EID.Config["ModIndicatorTextColor"].."}}" .. EID.ModIndicator[obj.ModName].Name
-					if modIcon then
-						rst = rst .. "{{".. EID.ModIndicator[obj.ModName].Icon .."}}"
+				-- 윗라인 추가 아이콘
+				if extraIcon then
+					primaryListName = extraIcon .. " " .. primaryListName
+				end
+				-- 리스트 아랫라인 (모드명)
+				local secondaryListName = type(entry.ListSecondaryTitle) == "function" and entry.ListSecondaryTitle() or entry.ListSecondaryTitle;
+				if not secondaryListName then
+					local isModded = obj.ModName
+					local modIcon = isModded and EID.ModIndicator[obj.ModName] and EID.ModIndicator[obj.ModName].Icon
+					if isModded and obj.ModName and EID.ModIndicator[obj.ModName] and EID.ModIndicator[obj.ModName].Name then
+						local rst = ""
+						rst = rst .. "{{"..EID.Config["ModIndicatorTextColor"].."}}" .. EID.ModIndicator[obj.ModName].Name
+						if modIcon then
+							rst = rst .. "{{".. EID.ModIndicator[obj.ModName].Icon .."}}"
+						end
+						secondaryListName = rst
 					end
-					EID:renderString(rst, textrenderpos + Vector(0, EID.lineHeight + 1), Vector(1,1), EID:getTextColor())
+				end
+				idesc.IconBgSprite:SetFrame("ItemIcon",frameno)
+				idesc.IconBgSprite:Render(iconrenderpos, Vector(0,0), Vector(0,0))
+				local iconOffsetPos = Vector(iconOffset.X, (height / 2) + iconOffset.Y)
+				if extIcon then
+					EID:renderString(extIcon, renderpos + iconOffsetPos, Vector(1,1), color)
+				elseif obj.Icon then
+					EID:renderInlineIcons({{obj.Icon,0}}, renderpos.X + iconOffsetPos.X, renderpos.Y + iconOffsetPos.Y)
+				else
+					EID:renderString("{{CustomTransformation}}", renderpos + iconOffsetPos, Vector(1,1), color)
+				end
+				if leftIcon then
+					EID:renderString(leftIcon, qtextrenderpos, Vector(1,1), color)
+				end
+				if primaryListName then
+					EID:renderString(primaryListName, textrenderpos + Vector(0, secondaryListName ~= nil and 0 or (EID.lineHeight / 2)), Vector(1,1), color)
+				end
+				if secondaryListName then
+					EID:renderString(secondaryListName, textrenderpos + Vector(0, EID.lineHeight + 1), Vector(1,1), EID:getTextColor())
 				end
 			end
+		else -- Render Grid
 		end
-		if desc then
+
+		if _debug then
+			local demoDescObj = EID:getDescriptionObj(-999, -1, 1)
+			demoDescObj.Name = "{{Player0}} " .. "Inventory Description list debug"
+
+			local desc = ""
+				.. "# props.screenx : " .. istate.listprops.screenx
+				.. "# props.screeny : " .. istate.listprops.screeny
+				.. "# props.max : " .. istate.listprops.max
+				.. "# props.current : " .. istate.listprops.current
+				.. "# props.offset : " .. istate.listprops.offset
+				.. "# validcount : " .. getListCount()
+				.. "# numEntries : " .. numEntries
+				.. "# calcMin : " .. (listOffset + 1)
+				.. "# calcMax : " .. (math.min(listOffset + validcount, #entries))
+
+			demoDescObj.Description = desc or ""
+			EID:displayPermanentText(demoDescObj)
+		elseif selObj and not istate.listprops.listonly then
+			desc = selObj
+			if selEntry.Type == idescEIDType.PLAYER then
+				local extIcon = type(selEntry.Icon) == "function" and selEntry.Icon() or selEntry.Icon;
+				if extIcon then
+					desc.Name = extIcon .. desc.Name
+				end
+			end
 			EID:displayPermanentText(desc)
 		end
-	else
+
 	end
+
 end
-idesc:AddCallback(ModCallbacks.MC_POST_RENDER, onRender)
+idesc:AddCallback(ModCallbacks.MC_POST_RENDER, idesc.Render)
 
-function idesc.InputAction(_, entity, inputHook, buttonAction)
+function idesc:InputAction(entity, inputHook, buttonAction)
+	if idesc:getOptions("listkey", -1) == -1 then return end
 
-	if idesc.state.showList and buttonAction ~= ButtonAction.ACTION_FULLSCREEN and buttonAction ~= ButtonAction.ACTION_CONSOLE and buttonAction ~= options.listkey then
+	if istate.showList and istate.savedtimer then
+		game.TimeCounter = istate.savedtimer
+	elseif istate.savedtimer then
+		istate.savedtimer = nil
+	end
+
+	if istate.showList
+	and buttonAction ~= ButtonAction.ACTION_FULLSCREEN
+	and buttonAction ~= ButtonAction.ACTION_CONSOLE
+	and buttonAction ~= idesc:getOptions("listkey") then
 
 		if inputHook == InputHook.IS_ACTION_PRESSED or inputHook == InputHook.IS_ACTION_TRIGGERED then
 			return false
 		else
 			return 0
 		end
-
 	end
-
 end
 idesc:AddCallback(ModCallbacks.MC_INPUT_ACTION, idesc.InputAction)
 
+--#region 와카바 모드 테스트용 간단 설명 리스트
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-if ModConfigMenu then
-	local MCM = ModConfigMenu
-	MCM.RemoveCategory("Inventory Desc")
-	MCM.AddTitle("Inventory Desc", "Inventory Descriptions")
-	MCM.AddSpace("Inventory Desc")
-	MCM.AddText("Inventory Desc", function() return ""..idesc.version end)
-	MCM.AddText("Inventory Desc", function() return "by kohashiwahaba aka. Mika" end)
-	MCM.AddSpace("Inventory Desc")
-	MCM.AddText("Inventory Desc", function() return "All other options follow" end)
-	MCM.AddText("Inventory Desc", function() return "options from External Item Descriptions" end)
-	MCM.AddSpace("Inventory Desc")
-	
-	MCM.AddSetting(
-		"Inventory Desc",
-		{
-			Type = ModConfigMenu.OptionType.KEYBIND_KEYBOARD,
-			CurrentSetting = function()
-				return options.listkey
-			end,
-			Display = function()
-				local currentValue = options.listkey
-				local displayString = "List toggle key : "
-				local key = "None"
-				if currentValue > -1 then
-					key = "Unknown Key"
-					if InputHelper.KeyboardToString[currentValue] then
-						key = InputHelper.KeyboardToString[currentValue]
-					end
-				end
-				displayString = displayString .. key
-				return displayString
-			end,
-			Popup = function()
-
-				local currentValue = options.listkey
-	
-				local goBackString = "back"
-				if ModConfigMenu.Config.LastBackPressed then
-	
-					if InputHelper.KeyboardToString[ModConfigMenu.Config.LastBackPressed] then
-						goBackString = InputHelper.KeyboardToString[ModConfigMenu.Config.LastBackPressed]
-					end
-	
-				end
-	
-				local keepSettingString = ""
-				if currentValue > -1 then
-	
-					local currentSettingString = nil
-					if InputHelper.KeyboardToString[currentValue] then
-						currentSettingString = InputHelper.KeyboardToString[currentValue]
-					end
-	
-					keepSettingString = "This setting is currently set to \"" .. currentSettingString .. "\".$newlinePress this button to keep it unchanged.$newline$newline"
-	
-				end
-	
-				local deviceString = ""
-				deviceString = "keyboard"
-	
-				return "Press a button on your " .. deviceString .. " to change this setting.$newline$newline" .. keepSettingString .. "Press \"" .. goBackString .. "\" to go back and clear this setting."
-	
-			end,
-			PopupGfx = ModConfigMenu.PopupGfx.WIDE_SMALL,
-			PopupWidth = 280,
-			OnChange = function(current)
-				if current then
-					options.listkey = current
-				end
-			end,
-			Info = {
-				"Press to display list and descriptions for current held items(Default = F4 key)",
+function idesc:tti(min, max, allow_mod, filter)
+	local entries = {}
+	local config = Isaac.GetItemConfig()
+	min = min or 1
+	max = max or config:GetCollectibles().Size - 1
+	for i = min, max do
+		if config:GetCollectible(i) and (not (filter and type(filter) == "function") or (filter(i))) then
+			local quality = tonumber(config:GetCollectible(tonumber(i)).Quality)
+			---@type InventoryDescEntry
+			local entry = {
+				Type = idescEIDType.COLLECTIBLE,
+				Variant = PickupVariant.PICKUP_COLLECTIBLE,
+				SubType = i,
+				AllowModifiers = allow_mod,
+				Frame = function()
+					return idesc:getOptions("q"..quality.."icon")
+				end,
+				LeftIcon = "{{Quality"..quality.."}}",
 			}
-		}
-	)
-	MCM.AddSetting(
-		"Inventory Desc",
-		{
-			Type = ModConfigMenu.OptionType.NUMBER,
-			CurrentSetting = function()
-				return options.listoffset
-			end,
-			Minimum = 100,
-			Maximum = 600,
-			ModifyBy = 10,
-			Display = function()
-				return "List offset: " .. options.listoffset
-			end,
-			OnChange = function(current)
-				options.listoffset = current
-			end,
-			Info = {
-				"Right offset for list of items(Default = 200)",
+			table.insert(entries, entry)
+		end
+	end
+
+	idesc:showEntries(entries)
+end
+function idesc:ttt(min, max, allow_mod, isGolden, filter)
+	local entries = {}
+	local config = Isaac.GetItemConfig()
+	min = min or 1
+	max = max or config:GetTrinkets().Size - 1
+	for i = min, max do
+		if config:GetTrinket(i) and (not (filter and type(filter) == "function") or (filter(i))) then
+			---@type InventoryDescEntry
+			local entry = {
+				Type = idescEIDType.TRINKET,
+				Variant = PickupVariant.PICKUP_TRINKET,
+				SubType = isGolden and i + 32678 or i,
+				AllowModifiers = allow_mod or isGolden,
 			}
-		}
-	)
-
-
-
-
-
-end
-
-
-
-function idesc:init(continue)
-	local tempstate
-	if idesc:HasData() then
-		tempstate = json.decode(idesc:LoadData())
-		options = tempstate
+			table.insert(entries, entry)
+		end
 	end
+	idesc:showEntries(entries)
 end
-idesc:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, idesc.init)
-
-function idesc:save(shouldSave)
-	if shouldSave then
-    idesc:SaveData(json.encode(options))
+function idesc:ttc(min, max, allow_mod, filter)
+	local entries = {}
+	local config = Isaac.GetItemConfig()
+	min = min or 1
+	max = max or config:GetCards().Size - 1
+	for i = min, max do
+		if config:GetCard(i) and (not (filter and type(filter) == "function") or (filter(i))) then
+			---@type InventoryDescEntry
+			local entry = {
+				Type = idescEIDType.CARD,
+				Variant = PickupVariant.PICKUP_TAROTCARD,
+				SubType = i,
+				AllowModifiers = allow_mod,
+			}
+			table.insert(entries, entry)
+		end
 	end
+	idesc:showEntries(entries)
 end
 
-
-function idesc:OnGameExit(shouldSave)
-	idesc:save(shouldSave)
-end
-
---idesc:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, idesc.OnGameExit)
-
-print("Inv3ntory Descriptions Loaded")
+print("InvDesc v2 standalone Loaded")
