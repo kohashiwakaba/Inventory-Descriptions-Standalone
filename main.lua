@@ -269,6 +269,15 @@ function idesc:addDefault(category, target, entry)
 end
 
 function idesc:removeDefault(category, target, entry)
+	if not idesc.defaults[category] or not idesc.defaults[category][target] then
+		return
+	end
+	for i, e in ipairs(idesc.defaults[category][target]) do
+		if e == entry then
+			table.remove(idesc.defaults[category][target], i)
+			break
+		end
+	end
 end
 
 function idesc:addBlacklist(category, target, entry)
@@ -281,8 +290,31 @@ function idesc:addBlacklist(category, target, entry)
 	table.insert(idesc.blacklists[category][target], entry)
 end
 
-function idesc:removeBlacklist(category, target, entry)
+
+function idesc:hasBlacklist(category, target, entry)
+	if not idesc.blacklists[category] or not idesc.blacklists[category][target] then
+		return false
+	end
+	for i, e in ipairs(idesc.blacklists[category][target]) do
+		if e == entry then
+			return true
+		end
+	end
+	return false
 end
+
+function idesc:removeBlacklist(category, target, entry)
+	if not idesc.blacklists[category] or not idesc.blacklists[category][target] then
+		return
+	end
+	for i, e in ipairs(idesc.blacklists[category][target]) do
+		if e == entry then
+			table.remove(idesc.blacklists[category][target], i)
+			break
+		end
+	end
+end
+
 
 --#endregion
 
@@ -424,6 +456,7 @@ function idesc:getHeldActives()
 	local entries = {} ---@type InventoryDescEntry[]
 	for i = 0, game:GetNumPlayers() - 1 do
 		local player = Isaac.GetPlayer(i)
+		local playerType = player:GetPlayerType()
 		for s = 0, 3 do
 			local entryIndex = player:GetActiveItem(s)
 			if entryIndex > 0 and not has(ei, entryIndex) then
@@ -452,9 +485,10 @@ function idesc:getHeldCards()
 	local entries = {} ---@type InventoryDescEntry[]
 	for i = 0, game:GetNumPlayers() - 1 do
 		local player = Isaac.GetPlayer(i)
+		local playerType = player:GetPlayerType()
 		for s = 0, 3 do
 			local entryIndex = player:GetCard(s)
-			if entryIndex > 0 and not has(ei, entryIndex) then
+			if entryIndex > 0 and not has(ei, entryIndex) and not idesc:hasBlacklist("cards", playerType, entryIndex) then
 				---@type InventoryDescEntry
 				local entry = {
 					Type = idescEIDType.CARD,
@@ -475,6 +509,7 @@ function idesc:getHeldPills()
 	local entries = {} ---@type InventoryDescEntry[]
 	for i = 0, game:GetNumPlayers() - 1 do
 		local player = Isaac.GetPlayer(i)
+		local playerType = player:GetPlayerType()
 		for s = 0, 3 do
 			local entryIndex = player:GetPill(s)
 			if entryIndex > 0 and not has(ei, entryIndex) then
@@ -499,8 +534,9 @@ function idesc:getPassives()
 	local passives = EID:GetAllPassiveItems()
 	for i = 0, game:GetNumPlayers() - 1 do
 		local player = Isaac.GetPlayer(i)
+		local playerType = player:GetPlayerType()
 		for _, entryIndex in ipairs(passives) do
-			if entryIndex > 0 and player:HasCollectible(entryIndex) and not has(ei, entryIndex) then
+			if entryIndex > 0 and player:HasCollectible(entryIndex) and not has(ei, entryIndex) and not idesc:hasBlacklist("collectibles", playerType, entryIndex) then
 				local onlyTrue = player:HasCollectible(entryIndex, true)
 				local hasWisp = false
 				if not onlyTrue then
@@ -559,8 +595,9 @@ function idesc:getTrinkets()
 	local trinkets = getAllTrinkets()
 	for i = 0, game:GetNumPlayers() - 1 do
 		local player = Isaac.GetPlayer(i)
+		local playerType = player:GetPlayerType()
 		for _, entryIndex in ipairs(trinkets) do
-			if entryIndex > 0 and player:HasTrinket(entryIndex) and not has(ei, entryIndex) then
+			if entryIndex > 0 and player:HasTrinket(entryIndex) and not has(ei, entryIndex) and not idesc:hasBlacklist("trinkets", playerType, entryIndex) then
 				---@type InventoryDescEntry
 				local entry = {
 					Type = idescEIDType.TRINKET,
