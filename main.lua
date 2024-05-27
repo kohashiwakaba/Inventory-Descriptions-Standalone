@@ -6,22 +6,38 @@ if not REPENTANCE then return end
 if not EID then return end
 if EIDKR then return end
 
+local currentStrVersion = "v1.99 2024-05-28"
+local currentVersion = 19900
+
+if InventoryDescriptions then
+	if currentVersion <= InventoryDescriptions.intversion then
+		return
+	end
+end
+
 local game = Game()
 local _debug = false
 
 local idesc = RegisterMod("Inventory Descriptions", 1)
 InventoryDescriptions = idesc
 
-idesc.version = "v1.99"
-idesc.intversion = 19900
+idesc.version = currentStrVersion
+idesc.intversion = currentVersion
 
+---@type Sprite
 idesc.BackgroundSprite = Sprite()
 idesc.BackgroundSprite:Load("gfx/ui/wakaba_idesc_menu.anm2", true)
 idesc.BackgroundSprite:SetFrame("Idle",0)
 
+---@type Sprite
 idesc.IconBgSprite = Sprite()
 idesc.IconBgSprite:Load("gfx/ui/wakaba_idesc_menu.anm2", true)
 idesc.IconBgSprite:SetFrame("ItemIcon",0)
+
+---@type Font
+idesc.cf = Font() -- init font object
+idesc.cf:Load("font/luaminioutlined.fnt") -- load a font into the font object
+
 
 ---@class InventoryDescEntries
 ---@field Entries InventoryDescEntry[]
@@ -38,6 +54,7 @@ idesc.IconBgSprite:SetFrame("ItemIcon",0)
 ---@field Color string|function
 ---@field LeftIcon string|function
 ---@field ExtraIcon string|function
+---@field InnerText string|function
 ---@field IconRenderOffset Vector
 ---@field ListPrimaryTitle string|function
 ---@field ListSecondaryTitle string|function
@@ -89,6 +106,8 @@ idesc.options = {
 	invactives = true,
 	invtrinkets = true,
 	invpocketitems = true,
+	invlistmode = "list",
+	invgridcolumn = 6,
 }
 
 function idesc:init(continue)
@@ -113,7 +132,7 @@ local istate = {
 	showList = false,
 	maxCollectibleID = Isaac.GetItemConfig():GetCollectibles().Size - 1,
 	maxTrinketID = Isaac.GetItemConfig():GetTrinkets().Size - 1,
-	allowmodifiers = false,
+	allowmodifiers = true,
 	lists = {
 		playernotes = {},
 		items = {},
@@ -130,8 +149,10 @@ local istate = {
 		max = 1,
 		current = 1,
 		offset = 0,
-		allowmodifiers = false,
+		allowmodifiers = true,
 		listonly = false,
+		listmode = "grid",
+		gridcolumn = 6,
 	},
 	savedtimer = nil,
 }
@@ -479,21 +500,35 @@ function idesc:getPassives()
 		local player = Isaac.GetPlayer(i)
 		for _, entryIndex in ipairs(passives) do
 			if entryIndex > 0 and player:HasCollectible(entryIndex) and not has(ei, entryIndex) then
-				local quality = tonumber(EID.itemConfig:GetCollectible(tonumber(entryIndex)).Quality)
-				local modifiers = entryIndex == CollectibleType.COLLECTIBLE_BIRTHRIGHT
-				---@type InventoryDescEntry
-				local entry = {
-					Type = idescEIDType.COLLECTIBLE,
-					Variant = PickupVariant.PICKUP_COLLECTIBLE,
-					SubType = entryIndex,
-					AllowModifiers = modifiers,
-					Frame = function()
-						return idesc:getOptions("q"..quality.."icon")
-					end,
-					LeftIcon = "{{Quality"..quality.."}}",
-				}
-				table.insert(entries, entry)
-				table.insert(ei, entryIndex)
+				local onlyTrue = player:HasCollectible(entryIndex, true)
+				local hasWisp = false
+				if not onlyTrue then
+					local wisps = Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.ITEM_WISP, entryIndex, false, false)
+					for _, e in ipairs(wisps) do
+						local f = e:ToFamiliar()
+						if f and GetPtrHash(f.Player) == GetPtrHash(player) then
+							hasWisp = true
+						end
+					end
+				end
+				if onlyTrue or not hasWisp then
+					local quality = tonumber(EID.itemConfig:GetCollectible(tonumber(entryIndex)).Quality)
+					local modifiers = entryIndex == CollectibleType.COLLECTIBLE_BIRTHRIGHT
+					---@type InventoryDescEntry
+					local entry = {
+						Type = idescEIDType.COLLECTIBLE,
+						Variant = PickupVariant.PICKUP_COLLECTIBLE,
+						SubType = entryIndex,
+						AllowModifiers = modifiers,
+						Frame = function()
+							return idesc:getOptions("q"..quality.."icon")
+						end,
+						LeftIcon = "{{Quality"..quality.."}}",
+						InnerText = entryIndex,
+					}
+					table.insert(entries, entry)
+					table.insert(ei, entryIndex)
+				end
 			end
 		end
 	end
@@ -530,6 +565,7 @@ function idesc:getTrinkets()
 					Type = idescEIDType.TRINKET,
 					Variant = PickupVariant.PICKUP_TRINKET,
 					SubType = entryIndex,
+					InnerText = entryIndex,
 				}
 				table.insert(entries, entry)
 				table.insert(ei, entryIndex)
@@ -638,7 +674,7 @@ end
 
 ---@param entries InventoryDescEntry[]
 ---@param stopTimer boolean
-function idesc:showEntries(entries, stopTimer, listOnly)
+function idesc:showEntries(entries, listType, stopTimer, listOnly)
 	if #entries <= 0 then
 		return false
 	end
@@ -649,6 +685,7 @@ function idesc:showEntries(entries, stopTimer, listOnly)
 	istate.listprops.screenx = x
 	istate.listprops.screeny = y
 	istate.listprops.listonly = listOnly
+	istate.listprops.listmode = listType or "list"
 	return istate.showList
 end
 
@@ -684,17 +721,19 @@ function idesc:recalculateOffset()
 
 	local validcount = getListCount()
 	local listprops = istate.listprops
+	if istate.listprops.listmode == "grid" then
+	else
+		local listOffset = listprops.offset
+		local entries = idesc:currentEntries()
+		local min = listOffset + 1
+		local max = math.min(listOffset + validcount, #entries)
+		local numEntries = #entries
 	
-	local listOffset = listprops.offset
-	local entries = idesc:currentEntries()
-	local min = listOffset + 1
-	local max = math.min(listOffset + validcount, #entries)
-	local numEntries = #entries
-
-	if listprops.current > max then
-		istate.listprops.offset = listprops.offset + (listprops.current - listprops.offset - validcount + 2)
-	elseif listprops.offset + validcount > listprops.max then
-		istate.listprops.offset = listprops.max - validcount
+		if listprops.current > max then
+			istate.listprops.offset = listprops.offset + (listprops.current - listprops.offset - validcount + 2)
+		elseif listprops.offset + validcount > listprops.max then
+			istate.listprops.offset = listprops.max - validcount
+		end
 	end
 
 	local x,y = EID:getScreenSize().X, EID:getScreenSize().Y
@@ -718,7 +757,8 @@ function idesc:Update(player)
 			return
 		end
 		local entries = idesc:getBasicEntries()
-		if idesc:showEntries(entries, true) then
+		local listMode = idesc:getOptions("invlistmode", "list")
+		if idesc:showEntries(entries, listMode, true) then
 			istate.savedtimer = game.TimeCounter
 		else
 			idesc:resetEntries()
@@ -732,48 +772,95 @@ function idesc:Update(player)
 		end
 		local listcount = getListCount()
 		local listprops = istate.listprops
-		if Input.IsActionTriggered(ButtonAction.ACTION_SHOOTUP, player.ControllerIndex or 0) then
-			inputready = false
-			istate.listprops.current = listprops.current - 1
-			if listprops.current - listprops.offset < 2 and listprops.offset > 0 then
-				istate.listprops.offset = listprops.offset - 1
+		
+		if istate.listprops.listmode == "grid" then -- Render Grid
+			local columns = idesc:getOptions("invgridcolumn", 6)
+
+			if Input.IsActionTriggered(ButtonAction.ACTION_SHOOTLEFT, player.ControllerIndex or 0) then
+				inputready = false
+				istate.listprops.current = listprops.current - 1
+				if listprops.current - listprops.offset < 0 and listprops.offset > 0 then
+					istate.listprops.offset = math.max(listprops.offset - columns, 0)
+				end
+				if listprops.current <= 0 then
+					istate.listprops.current = listprops.max
+					istate.listprops.offset = math.max((math.ceil(listprops.max / columns) * columns) - (listcount * columns), 0)
+				end
+			elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTRIGHT, player.ControllerIndex or 0) then
+				inputready = false
+				istate.listprops.current = listprops.current + 1
+				if listprops.current > (listprops.offset + (listcount * columns)) then
+					istate.listprops.offset = istate.listprops.offset + columns
+				end
+				if listprops.current > listprops.max then
+					istate.listprops.current = 1
+					istate.listprops.offset = 0
+				end
+			elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTUP, player.ControllerIndex or 0) then
+				inputready = false
+				istate.listprops.current = listprops.current - columns
+				if listprops.current - listprops.offset < 0 and listprops.offset > 0 then
+					istate.listprops.offset = math.max(listprops.offset - columns, 0)
+				end
+				if listprops.current <= 0 then
+					istate.listprops.current = listprops.max
+					istate.listprops.offset = math.max((math.ceil(listprops.max / columns) * columns) - (listcount * columns), 0)
+				end
+			elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTDOWN, player.ControllerIndex or 0) then
+				inputready = false
+				istate.listprops.current = listprops.current + columns
+				if listprops.current > (listprops.offset + (listcount * columns)) then
+					istate.listprops.offset = istate.listprops.offset + columns
+				end
+				if listprops.current > listprops.max then
+					istate.listprops.current = 1
+					istate.listprops.offset = 0
+				end
 			end
-			if listprops.current <= 0 then
-				istate.listprops.current = listprops.max
-				istate.listprops.offset = (listprops.max - listcount) > 0 and listprops.max - listcount or 0
-			end
-		elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTLEFT, player.ControllerIndex or 0) then
-			inputready = false
-			istate.listprops.current = listprops.current - listcount
-			istate.listprops.offset = listprops.offset - listcount
-			if listprops.offset < 0 then
-				istate.listprops.offset = 0
-			end
-			if listprops.current <= 0 then
-				istate.listprops.current = 1
-				istate.listprops.offset = 0
-			end
-		elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTDOWN, player.ControllerIndex or 0) then
-			inputready = false
-			istate.listprops.current = listprops.current + 1
-			if listprops.current - listprops.offset > (listcount - 2) and listprops.max - listprops.offset > listcount then
-				istate.listprops.offset = listprops.offset + 1
-			end
-			if listprops.current > listprops.max then
-				istate.listprops.current = 1
-				istate.listprops.offset = 0
-			end
-		elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTRIGHT, player.ControllerIndex or 0) and (listprops.current + listcount) < listprops.max then
-			inputready = false
-			istate.listprops.current = listprops.current + listcount
-			istate.listprops.offset = listprops.offset + listcount
-			if listprops.max - listprops.offset < listcount then
-				istate.listprops.current = listprops.current - (listcount - (listprops.max - listprops.offset))
-				istate.listprops.offset = listprops.max - listcount
-			end
-			if listprops.current > listprops.max then
-				istate.listprops.current = listprops.max
-				istate.listprops.offset = listprops.max - listcount
+		else
+			if Input.IsActionTriggered(ButtonAction.ACTION_SHOOTUP, player.ControllerIndex or 0) then
+				inputready = false
+				istate.listprops.current = listprops.current - 1
+				if listprops.current - listprops.offset < 2 and listprops.offset > 0 then
+					istate.listprops.offset = listprops.offset - 1
+				end
+				if listprops.current <= 0 then
+					istate.listprops.current = listprops.max
+					istate.listprops.offset = (listprops.max - listcount) > 0 and listprops.max - listcount or 0
+				end
+			elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTLEFT, player.ControllerIndex or 0) then
+				inputready = false
+				istate.listprops.current = listprops.current - listcount
+				istate.listprops.offset = listprops.offset - listcount
+				if listprops.offset < 0 then
+					istate.listprops.offset = 0
+				end
+				if listprops.current <= 0 then
+					istate.listprops.current = 1
+					istate.listprops.offset = 0
+				end
+			elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTDOWN, player.ControllerIndex or 0) then
+				inputready = false
+				istate.listprops.current = listprops.current + 1
+				if listprops.current - listprops.offset > (listcount - 2) and listprops.max - listprops.offset > listcount then
+					istate.listprops.offset = listprops.offset + 1
+				end
+				if listprops.current > listprops.max then
+					istate.listprops.current = 1
+					istate.listprops.offset = 0
+				end
+			elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTRIGHT, player.ControllerIndex or 0) and (listprops.current + listcount) < listprops.max then
+				inputready = false
+				istate.listprops.current = listprops.current + listcount
+				istate.listprops.offset = listprops.offset + listcount
+				if listprops.max - listprops.offset < listcount then
+					istate.listprops.current = listprops.current - (listcount - (listprops.max - listprops.offset))
+					istate.listprops.offset = listprops.max - listcount
+				end
+				if listprops.current > listprops.max then
+					istate.listprops.current = listprops.max
+					istate.listprops.offset = listprops.max - listcount
+				end
 			end
 		end
 	end
@@ -839,13 +926,81 @@ function idesc:Render()
 
 		local listOffset = listprops.offset
 		local entries = idesc:currentEntries()
-		local min = listOffset + 1
-		local max = math.min(listOffset + validcount, #entries)
 		local numEntries = #entries
 		local selObj = nil
 		local selEntry = nil
 
-		if true then -- Render List
+		if istate.listprops.listmode == "grid" then -- Render Grid
+			local columns = idesc:getOptions("invgridcolumn", 6)
+			local min = listOffset + 1
+			local max = math.min(listOffset + (validcount * columns), #entries)
+
+			for ix = min, max do
+				local lIndex = ix - listOffset
+				local entry = entries[ix]
+				if not entry then break end
+				local isHighlighted = ix == listprops.current
+				local allowModifiers = type(entry.AllowModifiers) == "function" and entry.AllowModifiers() or entry.AllowModifiers;
+				local obj = EID:getDescriptionObj(entry.Type, entry.Variant, entry.SubType, nil, istate.allowmodifiers or allowModifiers)
+
+				if isHighlighted then selObj = obj; selEntry = entry end
+
+				local i = ix - min + 1
+				local iv = ((i - 1) // columns) + 1
+				local currCol = ((i - 1) % columns)
+
+				local height = EID.lineHeight
+				local renderpos = Vector(x - optionsOffset, 36 + ((iv-1) * (height + 1) * 2)) - Vector(offset * 10, offset * -10)
+				renderpos = renderpos + Vector(currCol * 24, 0)
+
+				local iconrenderpos = renderpos + Vector(-23, ((height + 0) / 2) - 4)
+				local qtextrenderpos = renderpos + Vector(-26, -2)
+				local etextrenderpos = renderpos + Vector(-9, 16)
+				local intextrenderpos = renderpos + Vector(-3, -6)
+				local textrenderpos = renderpos + Vector(0, 1)
+				local color = isHighlighted and EID:getColor("{{ColorGold}}", EID:getNameColor()) or EID:getNameColor()
+				local frameno = (type(entry.Frame) == "function" and entry.Frame() or entry.Frame) or idesc:getOptions("idleicon");
+				frameno = isHighlighted and idesc:getOptions("selicon") or frameno
+				idesc.IconBgSprite.Scale = Vector(EID.Scale / 3, EID.Scale / 3)
+				idesc.IconBgSprite.Color = Color(1, 1, 1, EID.Config["Transparency"], 0, 0, 0)
+
+				local extIcon = type(entry.Icon) == "function" and entry.Icon() or entry.Icon;
+				local leftIcon = type(entry.LeftIcon) == "function" and entry.LeftIcon() or entry.LeftIcon;
+				local extraIcon = type(entry.ExtraIcon) == "function" and entry.ExtraIcon() or entry.ExtraIcon;
+				local innerText = type(entry.InnerText) == "function" and entry.InnerText() or entry.InnerText;
+				local iconOffset = entry.IconRenderOffset or Vector(-18, 1)
+
+				idesc.IconBgSprite:SetFrame("ItemIcon",frameno)
+				idesc.IconBgSprite:Render(iconrenderpos, Vector(0,0), Vector(0,0))
+				local iconOffsetPos = Vector(iconOffset.X, (height / 2) + iconOffset.Y)
+				if extIcon then
+					EID:renderString(extIcon, renderpos + iconOffsetPos, Vector(1,1), color)
+				elseif obj.Icon then
+					EID:renderInlineIcons({{obj.Icon,0}}, renderpos.X + iconOffsetPos.X, renderpos.Y + iconOffsetPos.Y)
+				else
+					EID:renderString("{{CustomTransformation}}", renderpos + iconOffsetPos, Vector(1,1), color)
+				end
+				if leftIcon then
+					EID:renderString(leftIcon, qtextrenderpos, Vector(1,1), color)
+				end
+				if extraIcon then
+					EID:renderString(extraIcon, etextrenderpos, Vector(1,1), color)
+				end
+				if innerText then
+					idesc.cf:DrawStringScaledUTF8(innerText, intextrenderpos.X, intextrenderpos.Y, 1.0, 1.0, KColor(1,1,1,1.0,0,0,0), 1 ,false)
+				end
+				if isHighlighted then
+					EID:renderString("{{ArrowGrayLeft}}", renderpos + Vector(-18, 1) + Vector(-10, 5), Vector(0.5,0.5), color)
+					EID:renderString("{{ArrowGrayRight}}", renderpos + Vector(-18, 1) + Vector(10, 5), Vector(0.5,0.5), color)
+					EID:renderString("{{ArrowGrayUp}}", renderpos + Vector(-18, 1) + Vector(1, -5), Vector(0.5,0.5), color)
+					EID:renderString("{{ArrowGrayDown}}", renderpos + Vector(-18, 1) + Vector(0, 16), Vector(0.5,0.5), color)
+				end
+
+
+			end
+		else -- Render List
+			local min = listOffset + 1
+			local max = math.min(listOffset + validcount, #entries)
 
 			for ix = min, max do
 				local entry = entries[ix]
@@ -862,6 +1017,7 @@ function idesc:Render()
 				local renderpos = Vector(x - optionsOffset, 36 + ((i-1) * (height + 1) * 2)) - Vector(offset * 10, offset * -10)
 				local iconrenderpos = renderpos + Vector(-23, ((height + 0) / 2) - 4)
 				local qtextrenderpos = renderpos + Vector(-33, (height / 2) + 1)
+				local intextrenderpos = renderpos + Vector(-3, -6)
 				local textrenderpos = renderpos + Vector(0, 1)
 				local color = isHighlighted and EID:getColor("{{ColorGold}}", EID:getNameColor()) or EID:getNameColor()
 				local frameno = (type(entry.Frame) == "function" and entry.Frame() or entry.Frame) or idesc:getOptions("idleicon");
@@ -872,6 +1028,7 @@ function idesc:Render()
 				local extIcon = type(entry.Icon) == "function" and entry.Icon() or entry.Icon;
 				local leftIcon = type(entry.LeftIcon) == "function" and entry.LeftIcon() or entry.LeftIcon;
 				local extraIcon = type(entry.ExtraIcon) == "function" and entry.ExtraIcon() or entry.ExtraIcon;
+				local innerText = type(entry.InnerText) == "function" and entry.InnerText() or entry.InnerText;
 				local iconOffset = entry.IconRenderOffset or Vector(-18, 1)
 
 				-- 리스트 윗라인 (이름)
@@ -924,6 +1081,9 @@ function idesc:Render()
 				if leftIcon then
 					EID:renderString(leftIcon, qtextrenderpos, Vector(1,1), color)
 				end
+				if innerText then
+					idesc.cf:DrawStringScaledUTF8(innerText, intextrenderpos.X, intextrenderpos.Y, 1.0, 1.0, KColor(1,1,1,1.0,0,0,0), 1 ,false)
+				end
 				if primaryListName then
 					EID:renderString(primaryListName, textrenderpos + Vector(0, secondaryListName ~= nil and 0 or (EID.lineHeight / 2)), Vector(1,1), color)
 				end
@@ -931,7 +1091,6 @@ function idesc:Render()
 					EID:renderString(secondaryListName, textrenderpos + Vector(0, EID.lineHeight + 1), Vector(1,1), EID:getTextColor())
 				end
 			end
-		else -- Render Grid
 		end
 
 		if _debug then
