@@ -539,11 +539,11 @@ idesc.descriptions[desclang].curses = {
 
 for playertype, playerdesc in pairs(idesc.descriptions[desclang].playernotes) do
 	local desc = playerdesc.description
-	EID:addEntity(InvDescEIDType.PLAYER, InvDescEIDVariant.DEFAULT, playertype, playerdesc.name, desc, lang)
+	EID:addEntity(InvDescEIDType.PLAYER, InvDescEIDVariant.DEFAULT, playertype, playerdesc.name, desc, desclang)
 end
 for curseid, cursedesc in pairs(idesc.descriptions[desclang].curses) do
 	local desc = cursedesc.description
-	EID:addEntity(InvDescEIDType.CURSE, InvDescEIDVariant.DEFAULT, curseid, cursedesc.name, desc, lang)
+	EID:addEntity(InvDescEIDType.CURSE, InvDescEIDVariant.DEFAULT, curseid, cursedesc.name, desc, desclang)
 	EID:AddIconToObject(InvDescEIDType.CURSE, InvDescEIDVariant.DEFAULT, curseid, cursedesc.icon)
 end
 

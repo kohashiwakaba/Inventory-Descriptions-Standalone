@@ -657,21 +657,24 @@ end
 
 function idesc:getBasicEntries(init)
 	local entries = {}
-	entries = merge(entries, idesc:getPlayers())
-	entries = merge(entries, idesc:getDefaults())
-	entries = merge(entries, idesc:getCurses())
-	entries = merge(entries, idesc:getHeldActives())
-	entries = merge(entries, idesc:getHeldCards())
-	entries = merge(entries, idesc:getHeldPills())
-	entries = merge(entries, idesc:getPassives())
-	entries = merge(entries, idesc:getTrinkets())
-	entries = merge(entries, idesc:getItemWisps())
-	if init then
-		--istate.lists.items = entries
-		--istate.listprops.max = #entries
+	for _, callbackData in pairs(Isaac.GetCallbacks("WakabaCallbacks.INVENTORY_DESCRIPTIONS_BASIC_ENTRIES")) do
+		local newEntries = callbackData.Function(callbackData.Mod)
+		if newEntries and type(newEntries) == "table" then
+			entries = merge(entries, newEntries)
+		end
 	end
 	return entries
 end
+
+idesc:AddPriorityCallback("WakabaCallbacks.INVENTORY_DESCRIPTIONS_BASIC_ENTRIES", -400, function (_) return idesc:getPlayers() end)
+idesc:AddPriorityCallback("WakabaCallbacks.INVENTORY_DESCRIPTIONS_BASIC_ENTRIES", -380, function (_) return idesc:getDefaults() end)
+idesc:AddPriorityCallback("WakabaCallbacks.INVENTORY_DESCRIPTIONS_BASIC_ENTRIES", -360, function (_) return idesc:getCurses() end)
+idesc:AddPriorityCallback("WakabaCallbacks.INVENTORY_DESCRIPTIONS_BASIC_ENTRIES", -340, function (_) return idesc:getHeldActives() end)
+idesc:AddPriorityCallback("WakabaCallbacks.INVENTORY_DESCRIPTIONS_BASIC_ENTRIES", -320, function (_) return idesc:getHeldCards() end)
+idesc:AddPriorityCallback("WakabaCallbacks.INVENTORY_DESCRIPTIONS_BASIC_ENTRIES", -300, function (_) return idesc:getHeldPills() end)
+idesc:AddPriorityCallback("WakabaCallbacks.INVENTORY_DESCRIPTIONS_BASIC_ENTRIES", -280, function (_) return idesc:getPassives() end)
+idesc:AddPriorityCallback("WakabaCallbacks.INVENTORY_DESCRIPTIONS_BASIC_ENTRIES", -260, function (_) return idesc:getTrinkets() end)
+idesc:AddPriorityCallback("WakabaCallbacks.INVENTORY_DESCRIPTIONS_BASIC_ENTRIES", -240, function (_) return idesc:getItemWisps() end)
 
 ---@param entries InventoryDescEntry[]
 ---@param stopTimer boolean
@@ -747,7 +750,7 @@ function idesc:recalculateOffset()
 		if listprops.current > max then
 			istate.listprops.offset = listprops.offset + (listprops.current - listprops.offset - validcount + 2)
 		elseif listprops.offset + validcount > listprops.max then
-			istate.listprops.offset = listprops.max - validcount
+			istate.listprops.offset = math.max(listprops.max - validcount, 0)
 		end
 	end
 
@@ -840,16 +843,17 @@ function idesc:Update(player)
 				end
 			elseif Input.IsActionTriggered(ButtonAction.ACTION_SHOOTDOWN, player.ControllerIndex or 0) then
 				inputready = false
-				istate.listprops.current = listprops.current + columns
-				if listprops.current > (listprops.offset + (listcount * columns)) then
-					istate.listprops.offset = istate.listprops.offset + columns
-				end
-				if listprops.current > listprops.max then
-					if listprops.current > listprops.max then
-						istate.listprops.current = listprops.max
-					else
-						istate.listprops.current = 1
-						istate.listprops.offset = 0
+				local cr = istate.listprops.current
+				local mx = istate.listprops.max
+				if 0 < mx - cr and mx - cr < columns then
+					istate.listprops.current = listprops.max
+				elseif mx == cr then
+					istate.listprops.current = 1
+					istate.listprops.offset = 0
+				else
+					istate.listprops.current = listprops.current + columns
+					if listprops.current > (listprops.offset + (listcount * columns)) then
+						istate.listprops.offset = istate.listprops.offset + columns
 					end
 				end
 			end
