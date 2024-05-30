@@ -176,6 +176,13 @@ idesc.entryset = {
 
 --#region local functions and variables
 
+EID.InlineIcons["InvDescMainIcon"] = function(_)
+	EID._NextIconModifier = function(sprite)
+		sprite.Color = Color(1, 1, 1, 1, 0, 0, 0)
+	end
+	return {"Blank", 0, 0, 0}
+end
+
 local kts = {}
 
 for key,num in pairs(Keyboard) do
@@ -990,6 +997,9 @@ function idesc:Render()
 		local optionsOffset = idesc:getOptions("listoffset")
 		local inputKey = idesc:getOptions("listkey", -1)
 
+		local oldTransparency = EID.Config["Transparency"] + 0
+		EID.Config["Transparency"] = 1
+
 		-- Render headers
 		EID:renderString("Current item list("..listprops.current.."/"..listprops.max..")", Vector(x - optionsOffset, 36-(EID.lineHeight*2)) - Vector(offset * 10, offset * -10), Vector(1,1), EID:getNameColor())
 		EID:renderString("Press ".. kts[inputKey].." again to exit", Vector(x - optionsOffset, 36-EID.lineHeight) - Vector(offset * 10, offset * -10), Vector(1,1), EID:getNameColor())
@@ -1162,6 +1172,7 @@ function idesc:Render()
 				end
 			end
 		end
+		EID.Config["Transparency"] = oldTransparency + 0
 
 		if _debug then
 			local demoDescObj = EID:getDescriptionObj(-999, -1, 1)
