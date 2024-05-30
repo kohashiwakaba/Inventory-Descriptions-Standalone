@@ -24,6 +24,9 @@ InventoryDescriptions = idesc
 idesc.version = currentStrVersion
 idesc.intversion = currentVersion
 
+local saveManager = include("idesc_src.save_manager")
+saveManager.Init(idesc)
+
 ---@type Sprite
 idesc.BackgroundSprite = Sprite()
 idesc.BackgroundSprite:Load("gfx/ui/wakaba_idesc_menu.anm2", true)
@@ -110,21 +113,6 @@ idesc.options = {
 	invlistmode = "list",
 	invgridcolumn = 6,
 }
-
-function idesc:init(continue)
-	local tempstate
-	if idesc:HasData() then
-		tempstate = json.decode(idesc:LoadData())
-		idesc.options = tempstate
-	end
-end
-idesc:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, idesc.init)
-
-function idesc:save(shouldSave)
-	if shouldSave then
-		idesc:SaveData(json.encode(idesc.options))
-	end
-end
 
 include("idesc_src.mod_config_menu")
 
@@ -685,11 +673,16 @@ end
 
 --#region
 function idesc:getOptions(optionKey, fallback)
-	return idesc.options[optionKey] or fallback
+	local co = saveManager.GetSettingsSave()
+	if not co[optionKey] and idesc.options[optionKey] then
+		co[optionKey] = idesc.options[optionKey]
+	end
+	return co[optionKey] or fallback
 end
 
 function idesc:setOptions(optionKey, value)
-	idesc.options[optionKey] = value
+	local co = saveManager.GetSettingsSave()
+	co[optionKey] = value
 end
 
 function idesc:getBasicEntries(init)

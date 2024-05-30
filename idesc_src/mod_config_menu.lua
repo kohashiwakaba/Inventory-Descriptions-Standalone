@@ -17,7 +17,7 @@ MCM.AddSetting(
 	{
 		Type = ModConfigMenu.OptionType.KEYBIND_KEYBOARD,
 		CurrentSetting = function()
-			return options.listkey
+			return idesc:getOptions("listkey")
 		end,
 		Display = function()
 			local currentValue = options.listkey
@@ -67,11 +67,74 @@ MCM.AddSetting(
 		PopupWidth = 280,
 		OnChange = function(current)
 			if current then
-				options.listkey = current
+				idesc:setOptions("listkey", current)
 			end
 		end,
 		Info = {
-			"Press to display list and descriptions for current held items(Default = F4 key)",
+			"Press to display list and descriptions for current held items(Default = F5 key)",
+		}
+	}
+)
+MCM.AddSetting(
+	"Inventory Desc",
+	{
+		Type = ModConfigMenu.OptionType.KEYBIND_KEYBOARD,
+		CurrentSetting = function()
+			return idesc:getOptions("switchkey")
+		end,
+		Display = function()
+			local currentValue = idesc:getOptions("switchkey")
+			local displayString = "Mode switch key : "
+			local key = "None"
+			if currentValue > -1 then
+				key = "Unknown Key"
+				if InputHelper.KeyboardToString[currentValue] then
+					key = InputHelper.KeyboardToString[currentValue]
+				end
+			end
+			displayString = displayString .. key
+			return displayString
+		end,
+		Popup = function()
+
+			local currentValue = idesc:getOptions("switchkey")
+
+			local goBackString = "back"
+			if ModConfigMenu.Config.LastBackPressed then
+
+				if InputHelper.KeyboardToString[ModConfigMenu.Config.LastBackPressed] then
+					goBackString = InputHelper.KeyboardToString[ModConfigMenu.Config.LastBackPressed]
+				end
+
+			end
+
+			local keepSettingString = ""
+			if currentValue > -1 then
+
+				local currentSettingString = nil
+				if InputHelper.KeyboardToString[currentValue] then
+					currentSettingString = InputHelper.KeyboardToString[currentValue]
+				end
+
+				keepSettingString = "This setting is currently set to \"" .. currentSettingString .. "\".$newlinePress this button to keep it unchanged.$newline$newline"
+
+			end
+
+			local deviceString = ""
+			deviceString = "keyboard"
+
+			return "Press a button on your " .. deviceString .. " to change this setting.$newline$newline" .. keepSettingString .. "Press \"" .. goBackString .. "\" to go back and clear this setting."
+
+		end,
+		PopupGfx = ModConfigMenu.PopupGfx.WIDE_SMALL,
+		PopupWidth = 280,
+		OnChange = function(current)
+			if current then
+				idesc:setOptions("switchkey", current)
+			end
+		end,
+		Info = {
+			"Press to switch list mode of descriptions for current held items(Default = F6 key)",
 		}
 	}
 )
@@ -80,19 +143,76 @@ MCM.AddSetting(
 	{
 		Type = ModConfigMenu.OptionType.NUMBER,
 		CurrentSetting = function()
-			return options.listoffset
+			return idesc:getOptions("listoffset")
 		end,
 		Minimum = 100,
 		Maximum = 600,
 		ModifyBy = 10,
 		Display = function()
-			return "List offset: " .. options.listoffset
+			return "List offset: " .. idesc:getOptions("listoffset")
 		end,
 		OnChange = function(current)
-			options.listoffset = current
+			idesc:setOptions("listoffset", current)
 		end,
 		Info = {
 			"Right offset for list of items(Default = 200)",
+		}
+	}
+)
+
+MCM.AddSetting(
+	"Inventory Desc",
+	{
+		Type = ModConfigMenu.OptionType.BOOLEAN,
+		CurrentSetting = function()
+			return idesc:getOptions("invlistmode") == "grid"
+		end,
+		Display = function()
+			return 'Display Mode: ' .. idesc:getOptions("invlistmode")
+		end,
+		OnChange = function(currentBool)
+			idesc:setOptions("invlistmode", currentBool and "grid" or "list")
+		end,
+		Info = {"Set display mode in Inventory Descriptions."}
+	}
+)
+
+MCM.AddSetting(
+	"Inventory Desc",
+	{
+		Type = ModConfigMenu.OptionType.NUMBER,
+		CurrentSetting = function()
+			return idesc:getOptions("invgridcolumn")
+		end,
+		Minimum = 3,
+		Maximum = 10,
+		ModifyBy = 1,
+		Display = function()
+			return "Grid columns: " .. idesc:getOptions("invgridcolumn")
+		end,
+		OnChange = function(current)
+			idesc:setOptions("invgridcolumn", current)
+		end,
+		Info = {
+			"Number of Columns for grid of items(Default = 6)",
+		}
+	}
+)
+MCM.AddSpace("Inventory Desc")
+MCM.AddSetting(
+	"Inventory Desc",
+	{
+		Type = ModConfigMenu.OptionType.BOOLEAN,
+		CurrentSetting = function() return true end,
+		Display = function()
+			return "--! DISABLE INVDESC HOTKEY !--"
+		end,
+		OnChange = function(current)
+			idesc:setOptions("listkey", -1)
+			idesc:setOptions("switchkey", -1)
+		end,
+		Info = {
+			"Press this to disable Inventory Descriptions hotkeys",
 		}
 	}
 )
