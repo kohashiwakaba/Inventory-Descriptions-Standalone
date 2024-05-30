@@ -138,6 +138,26 @@ MCM.AddSetting(
 		}
 	}
 )
+if REPENTOGON then
+MCM.AddSetting(
+	"Inventory Desc",
+	{
+		Type = ModConfigMenu.OptionType.BOOLEAN,
+		CurrentSetting = function()
+			return idesc:getOptions("invpassivehistory")
+		end,
+		Display = function()
+			return 'Collectible History: ' .. (idesc:getOptions("invpassivehistory") and "true" or "false")
+		end,
+		OnChange = function(currentBool)
+			idesc:setOptions("invpassivehistory", currentBool)
+		end,
+		Info = {"Set display mode in Inventory Descriptions."}
+	}
+)
+end
+
+
 MCM.AddSetting(
 	"Inventory Desc",
 	{
