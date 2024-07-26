@@ -6,8 +6,8 @@ if not REPENTANCE then return end
 if not EID then return end
 if EIDKR then return end
 
-local currentStrVersion = "v2 2024-05-31"
-local currentVersion = 20000
+local currentStrVersion = "v2.1 2024-07-26"
+local currentVersion = 20100
 
 if InventoryDescriptions then
 	if currentVersion <= InventoryDescriptions.intversion then
@@ -1363,4 +1363,4 @@ function idesc:ttc(min, max, allow_mod, filter)
 	idesc:showEntries(entries)
 end
 
-print("InvDesc v2 standalone Loaded")
+print("InvDesc v2.1 standalone Loaded")
