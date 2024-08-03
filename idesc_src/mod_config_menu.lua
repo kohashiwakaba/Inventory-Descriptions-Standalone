@@ -1,4 +1,14 @@
 if not ModConfigMenu then return end
+
+local function AnIndexOf(t, val)
+	for k, v in ipairs(t) do
+		if v == val then
+			return k
+		end
+	end
+	return 1
+end
+
 local idesc = InventoryDescriptions
 local options = idesc.options
 local MCM = ModConfigMenu
@@ -215,6 +225,28 @@ MCM.AddSetting(
 		end,
 		Info = {
 			"Number of Columns for grid of items(Default = 6)",
+		}
+	}
+)
+local initPositions = {"character", "collectible", "collectible_modded", "trinket"}
+MCM.AddSetting(
+	"Inventory Desc",
+	{
+		Type = ModConfigMenu.OptionType.NUMBER,
+		CurrentSetting = function()
+			return AnIndexOf(initPositions, idesc:getOptions("invinitcursor"))
+		end,
+		Minimum = 1,
+		Maximum = 4,
+		ModifyBy = 1,
+		Display = function()
+			return "Initial cursor: " .. idesc:getOptions("invinitcursor")
+		end,
+		OnChange = function(current)
+			idesc:setOptions("invinitcursor", initPositions[current])
+		end,
+		Info = {
+			"Initial cursor position on list show (Default = character)",
 		}
 	}
 )

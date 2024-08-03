@@ -52,6 +52,7 @@ idesc.cf:Load("font/luaminioutlined.fnt") -- load a font into the font object
 ---@field SubType integer
 ---@field AllowModifiers boolean|function
 ---@field Lemegeton boolean
+---@field InitCursorPos boolean
 ---@field IsHidden boolean|function
 ---@field Frame integer|function
 ---@field Icon string|function
@@ -113,6 +114,7 @@ idesc.options = {
 	invpocketitems = true,
 	invlistmode = "list",
 	invgridcolumn = 6,
+	invinitcursor = "character",
 }
 
 include("idesc_src.mod_config_menu")
@@ -405,6 +407,7 @@ function idesc:getPlayers()
 				SubType = entryIndex,
 				Icon = "{{Player"..entryIndex.."}}",
 				IconRenderOffset = Vector(-16.5, 1),
+				InitCursorPos = (idesc:getOptions("invinitcursor") == "character"),
 			}
 			table.insert(entries, entry)
 			table.insert(ei, entryIndex)
@@ -550,6 +553,7 @@ function idesc:getPassives()
 						LeftIcon = "{{Quality"..quality.."}}",
 						InnerText = entryIndex,
 						ExtraIcon = EID.ItemPoolTypeToMarkup[history:GetItemPoolType()],
+						InitCursorPos = (idesc:getOptions("invinitcursor") == "collectible" or idesc:getOptions("invinitcursor") == "collectible_modded"),
 					}
 					table.insert(entries, entry)
 					table.insert(ei, entryIndex)
@@ -588,6 +592,7 @@ function idesc:getPassives()
 							end,
 							LeftIcon = "{{Quality"..quality.."}}",
 							InnerText = entryIndex,
+							InitCursorPos = (onlyTrue and ((idesc:getOptions("invinitcursor") == "collectible") or (entryIndex >= 732 and idesc:getOptions("invinitcursor") == "collectible_modded"))),
 						}
 						table.insert(entries, entry)
 						table.insert(ei, entryIndex)
@@ -631,6 +636,7 @@ function idesc:getTrinkets()
 					Variant = PickupVariant.PICKUP_TRINKET,
 					SubType = entryIndex,
 					InnerText = entryIndex,
+					InitCursorPos = (idesc:getOptions("invinitcursor") == "trinket"),
 				}
 				table.insert(entries, entry)
 				table.insert(ei, entryIndex)
@@ -867,6 +873,17 @@ function idesc:Update(player)
 		local listMode = idesc:getOptions("invlistmode", "list")
 		if idesc:showEntries(entries, listMode, true) then
 			istate.savedtimer = game.TimeCounter
+			local initOffset = 0
+			for i, e in ipairs(entries) do
+				if e.InitCursorPos then
+					initOffset = i
+					break
+				end
+			end
+			if initOffset > 0 then
+				istate.listprops.current = initOffset
+				idesc:recalculateOffset()
+			end
 		else
 			idesc:resetEntries()
 		end
