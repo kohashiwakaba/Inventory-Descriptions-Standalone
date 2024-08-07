@@ -3,8 +3,17 @@
     <name>'Inventory Descriptions [REP/WIP]</name>
     <directory>invdesc wakaba</directory>
     <id>3255660204</id>
-    <description></description>
-    <version>2.000</version>
+    <description>Inventory Descriptions is one of exclusive feature from Pudding & Wakaba mod. Even though most features are adapted in EID's item modifier, there are still requests for this, so I decided to release this as seperate mod.
+
+- Press F5 to show current held items, trinkets, etc.
+- Pressing F6 while in list toggles list and grid.
+
+- Some settings can be configured through Mod Config Menu.
+-- REPENTOGON exclusive: An option to make passive list to 'History List', which sorts Isaac's earliest item first and shows which item got as certain item pool, making full reroll exploit useful.
+
+- This mod uses catinsurance's [url=https://github.com/catinsurance/IsaacSaveManager]IsaacSaveManager[/url]
+</description>
+    <version>2.1</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
 </metadata>
