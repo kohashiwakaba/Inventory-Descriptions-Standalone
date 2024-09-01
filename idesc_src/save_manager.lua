@@ -20,6 +20,7 @@ SaveManager.DefaultSaveKeys = {
 local modReference
 local json = require("json")
 local loadedData = false
+local dontSaveModData = false
 local skipFloorReset = false
 local skipRoomReset = false
 local shouldRestoreOnUse = true
@@ -28,11 +29,12 @@ local movingBoxCheck = true
 local currentFloor = 0
 local currentListIndex = 0
 local storePickupDataOnGameExit = false
+local inRunButNotLoaded = true
+
 ---@class SaveData
 local dataCache = {}
 ---@class GameSave
 local hourglassBackup = {}
-local inRunButNotLoaded = true
 
 SaveManager.Utility.ERROR_MESSAGE_FORMAT = "[IsaacSaveManager:%s] ERROR: %s (%s)\n"
 SaveManager.Utility.WARNING_MESSAGE_FORMAT = "[IsaacSaveManager:%s] WARNING: %s (%s)\n"
@@ -59,7 +61,7 @@ SaveManager.Utility.JsonIncompatibilityType = {
 ---@enum SaveManager.Utility.CustomCallback
 SaveManager.Utility.CustomCallback = {
 	PRE_DATA_SAVE = "ISAACSAVEMANAGER_PRE_DATA_SAVE",
-	POST_DATA_SAVE = "ISAACSAVEMANAGER_POST_DATA_LOAD",
+	POST_DATA_SAVE = "ISAACSAVEMANAGER_POST_DATA_SAVE",
 	PRE_DATA_LOAD = "ISAACSAVEMANAGER_PRE_DATA_LOAD",
 	POST_DATA_LOAD = "ISAACSAVEMANAGER_POST_DATA_LOAD",
 }
@@ -237,7 +239,7 @@ function SaveManager.Utility.GetSaveIndex(ent)
 			name = typeToName[ent.Type]
 		end
 		identifier = GetPtrHash(ent)
-		if ent.Type == EntityType.ENTITY_PLAYER then
+		if ent:ToPlayer() then
 			local player = ent:ToPlayer()
 			---@cast player EntityPlayer
 
@@ -551,7 +553,6 @@ function SaveManager.Save()
 	end
 
 	local newFinalData = SaveManager.Utility.RunCallback(SaveManager.Utility.CustomCallback.PRE_DATA_SAVE, finalData)
-	 SaveManager.Utility.RunCallback(SaveManager.Utility.CustomCallback.PRE_DATA_LOAD, finalData)
 	if newFinalData then
 		finalData = newFinalData
 	end
@@ -596,7 +597,8 @@ function SaveManager.Load(isLuamod)
 		saveData = SaveManager.Utility.PatchSaveFile(data, SaveManager.DEFAULT_SAVE)
 	end
 
-	local newSaveData = SaveManager.Utility.RunCallback(SaveManager.Utility.CustomCallback.PRE_DATA_LOAD, saveData, isLuamod)
+	local newSaveData = SaveManager.Utility.RunCallback(SaveManager.Utility.CustomCallback.PRE_DATA_LOAD, saveData,
+		isLuamod)
 	if newSaveData then
 		saveData = newSaveData
 	end
@@ -877,8 +879,9 @@ local function onEntityInit(_, ent)
 end
 
 local function detectLuamod()
-	if (REPENTOGON or game:GetFrameCount() > 0)
-		and not loadedData and inRunButNotLoaded
+	if not loadedData and inRunButNotLoaded
+		and (REPENTOGON and (not dontSaveModData and Isaac.GetFrameCount() > 0 and Console.GetHistory()[2] == "Success!")
+			or game:GetFrameCount() > 0)
 	then
 		SaveManager.Load(true)
 		inRunButNotLoaded = false
@@ -1100,13 +1103,23 @@ function SaveManager.Init(mod)
 	if REPENTOGON then
 		modReference:AddPriorityCallback(ModCallbacks.MC_POST_SLOT_INIT, CallbackPriority.IMPORTANT, onEntityInit)
 		modReference:AddPriorityCallback(ModCallbacks.MC_POST_SAVESLOT_LOAD, CallbackPriority.IMPORTANT, postSaveSlotLoad)
-		modReference:AddPriorityCallback(ModCallbacks.MC_MENU_INPUT_ACTION, CallbackPriority.IMPORTANT, detectLuamod)
+		modReference:AddPriorityCallback(ModCallbacks.MC_MENU_INPUT_ACTION, CallbackPriority.IMPORTANT, function()
+			local success, currentMenu = pcall(MenuManager.GetActiveMenu)
+			if not success then return end
+			dontSaveModData = currentMenu == MainMenuType.TITLE or
+				currentMenu == MainMenuType.MODS
+			detectLuamod()
+		end)
 	else
 		modReference:AddPriorityCallback(ModCallbacks.MC_POST_UPDATE, CallbackPriority.IMPORTANT, postSlotInitNoRGON)
 	end
 
 	--load luamod as early as possible.
-	modReference:AddPriorityCallback(ModCallbacks.MC_INPUT_ACTION, CallbackPriority.IMPORTANT, detectLuamod)
+	modReference:AddPriorityCallback(ModCallbacks.MC_INPUT_ACTION, CallbackPriority.IMPORTANT,
+		function()
+			dontSaveModData = false
+			detectLuamod()
+		end)
 
 	modReference:AddPriorityCallback(ModCallbacks.MC_POST_NEW_ROOM, CallbackPriority.EARLY, postNewRoom)
 	modReference:AddPriorityCallback(ModCallbacks.MC_POST_NEW_LEVEL, CallbackPriority.EARLY, postNewLevel)
@@ -1123,10 +1136,11 @@ function SaveManager.Init(mod)
 	-- used to detect if an unloaded mod is this mod for when saving for luamod
 	modReference.__SAVEMANAGER_UNIQUE_KEY = ("%s-%s"):format(Random(), Random())
 	modReference:AddPriorityCallback(ModCallbacks.MC_PRE_MOD_UNLOAD, CallbackPriority.EARLY, function(_, modToUnload)
-		if modToUnload.__SAVEMANAGER_UNIQUE_KEY and modToUnload.__SAVEMANAGER_UNIQUE_KEY == modReference.__SAVEMANAGER_UNIQUE_KEY then
-			if loadedData then
-				SaveManager.Save()
-			end
+		if modToUnload.__SAVEMANAGER_UNIQUE_KEY and modToUnload.__SAVEMANAGER_UNIQUE_KEY == modReference.__SAVEMANAGER_UNIQUE_KEY
+		and loadedData
+		and not dontSaveModData
+		then
+			SaveManager.Save()
 		end
 	end)
 end
