@@ -2,12 +2,12 @@
 --- STANDALONE OR IMPORTED MODS MUST INCLUDE THIS LINE FOR MOD CONFLIT PREVENTATION
 if _wakaba then return end
 
-if not REPENTANCE then return end
+if not (REPENTANCE or REPENTANCE_PLUS) then return end
 if not EID then return end
 if EIDKR then return end
 
-local currentStrVersion = "v2.1 2024-07-26"
-local currentVersion = 20100
+local currentStrVersion = "v2.4 2024-12-05"
+local currentVersion = 20400
 
 if InventoryDescriptions then
 	if currentVersion <= InventoryDescriptions.intversion then

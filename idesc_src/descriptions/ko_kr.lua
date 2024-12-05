@@ -325,7 +325,7 @@ idesc.descriptions[desclang].playernotes = {
 		description = "The Benighted: 야훼의 벌을 받아 타천사의 날개는 갈갈이 찢어졌습니다."
 		.. "#{{Collectible118}} 검은 날개로 날 수 없으며 굵기가 매우 얇은 혈사포를 발사합니다."
 		.. "#혈사포는 적에게 공격력 x0.5의 피해를 입힙니다."
-		.. "#{{Collectible704}} 고유 능력 : 각혈"
+		.. "#{{Collectible726}} 고유 능력 : 각혈"
 		.. "#{{Blank}} 재채기가 공격 키를 누르기 시작할 때 발동됩니다."
 		.. "#{{Blank}} 재채기로 적을 명중시키면 혈사포의 절반을 충전시킵니다."
 		.. "",
