@@ -6,8 +6,8 @@ if not (REPENTANCE or REPENTANCE_PLUS) then return end
 if not EID then return end
 if EIDKR then return end
 
-local currentStrVersion = "v2.4 2024-12-05"
-local currentVersion = 20400
+local currentStrVersion = "v2.41 2024-12-29"
+local currentVersion = 20410
 
 if InventoryDescriptions then
 	if currentVersion <= InventoryDescriptions.intversion then
