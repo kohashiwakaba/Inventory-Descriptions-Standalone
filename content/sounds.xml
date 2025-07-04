@@ -1,0 +1,12 @@
+<sounds root="sfx/">
+	<sound name="invdesc_list_on">
+		<sample weight="1" path="invdesc/on.wav" />
+	</sound>
+	<sound name="invdesc_list_off">
+		<sample weight="1" path="invdesc/off.wav" />
+	</sound>
+	<sound name="invdesc_list_loop">
+		<sample weight="1" path="invdesc/loop.wav" />
+	</sound>
+
+</sounds>

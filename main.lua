@@ -6,8 +6,8 @@ if not (REPENTANCE or REPENTANCE_PLUS) then return end
 if not EID then return end
 if EIDKR then return end
 
-local currentStrVersion = "v2.41 2024-12-29"
-local currentVersion = 20410
+local currentStrVersion = "v2.8 2025-07-04"
+local currentVersion = 20800
 
 if InventoryDescriptions then
 	if currentVersion <= InventoryDescriptions.intversion then
@@ -41,6 +41,9 @@ idesc.IconBgSprite:SetFrame("ItemIcon",0)
 idesc.cf = Font() -- init font object
 idesc.cf:Load("font/luaminioutlined.fnt") -- load a font into the font object
 
+idesc.SOUND_LIST_ON = Isaac.GetSoundIdByName("invdesc_list_on")
+idesc.SOUND_LIST_OFF = Isaac.GetSoundIdByName("invdesc_list_off")
+idesc.SOUND_LIST_LOOP = Isaac.GetSoundIdByName("invdesc_list_loop")
 
 ---@class InventoryDescEntries
 ---@field Entries InventoryDescEntry[]
@@ -117,6 +120,14 @@ idesc.options = {
 	invlistmode = "list",
 	invgridcolumn = 6,
 	invinitcursor = "character",
+	listdimmeralpha = 0.5,
+	listoffsety = 36,
+	invdescgutterx = 0,
+	invdescguttery = 0,
+	invtogglesound = true,
+	invtogglevolume = 2,
+	invloopsound = false,
+	invloopvolume = 2,
 }
 
 include("idesc_src.mod_config_menu")
@@ -1088,13 +1099,32 @@ function idesc:Update(player)
 end
 idesc:AddCallback(ModCallbacks.MC_POST_PLAYER_UPDATE, idesc.Update)
 
+function idesc:RenderEarly()
+	if istate.showList and not EID.CachingDescription then
+		if not istate.listprops.listonly then
+			local alpha = idesc:getOptions("listdimmeralpha")
+			if REPENTOGON then
+				local ntColor = idesc.BackgroundSprite.Color
+				ntColor.A = alpha
+				idesc.BackgroundSprite.Color = ntColor
+			else
+				idesc.BackgroundSprite.Color = Color(1, 1, 1, alpha, 0, 0, 0)
+			end
+			local x = EID:getScreenSize().X
+			local y = EID:getScreenSize().Y
+			idesc.BackgroundSprite:Render(Vector(x/2, y/2), Vector(0,0), Vector(0,0))
+		end
+	end
+end
+idesc:AddPriorityCallback(ModCallbacks.MC_POST_RENDER, -20000000, idesc.RenderEarly)
+
 function idesc:Render()
-	if ModConfigMenu and ModConfigMenu.IsVisible then
+	if istate.showList and ModConfigMenu and ModConfigMenu.IsVisible then
 		idesc:resetEntries()
 		return
 	end
 
-	if Encyclopedia and DeadSeaScrollsMenu.IsOpen() then
+	if istate.showList and Encyclopedia and DeadSeaScrollsMenu.IsOpen() then
 		idesc:resetEntries()
 		return
 	end
@@ -1139,6 +1169,7 @@ function idesc:Render()
 		local currentcursor = 1
 
 		local optionsOffset = idesc:getOptions("listoffset")
+		local optionsOffsetY = idesc:getOptions("listoffsety")
 		local inputKey = idesc:getOptions("listkey", -1)
 
 		local oldTransparency = EID.Config["Transparency"] + 0
@@ -1155,8 +1186,8 @@ function idesc:Render()
 		sstr = sstr:gsub("{listkey}", kts[inputKey])
 
 		-- Render headers
-		EID:renderString(pstr, Vector(x - optionsOffset, 36-(EID.lineHeight*2)) - Vector(offset * 10, offset * -10), Vector(1,1), EID:getNameColor())
-		EID:renderString(sstr, Vector(x - optionsOffset, 36-EID.lineHeight) - Vector(offset * 10, offset * -10), Vector(1,1), EID:getNameColor())
+		EID:renderString(pstr, Vector(x - optionsOffset, optionsOffsetY - (EID.lineHeight*2)) - Vector(offset * 10, offset * -10), Vector(1,1), EID:getNameColor())
+		EID:renderString(sstr, Vector(x - optionsOffset, optionsOffsetY - EID.lineHeight) - Vector(offset * 10, offset * -10), Vector(1,1), EID:getNameColor())
 
 		local listOffset = listprops.offset
 		local entries = idesc:currentEntries()
@@ -1168,6 +1199,9 @@ function idesc:Render()
 			local columns = idesc:getOptions("invgridcolumn", 6)
 			local min = listOffset + 1
 			local max = math.min(listOffset + (validcount * columns), #entries)
+
+			local gutterX = idesc:getOptions("invdescgutterx", 0)
+			local gutterY = idesc:getOptions("invdescguttery", 0)
 
 			for ix = min, max do
 				local lIndex = ix - listOffset
@@ -1185,8 +1219,9 @@ function idesc:Render()
 				local currCol = ((i - 1) % columns)
 
 				local height = EID.lineHeight
-				local renderpos = Vector(x - optionsOffset, 36 + ((iv-1) * (height + 1) * 2)) - Vector(offset * 10, offset * -10)
+				local renderpos = Vector(x - optionsOffset, optionsOffsetY + ((iv-1) * (height + 1) * 2)) - Vector(offset * 10, offset * -10)
 				renderpos = renderpos + Vector(currCol * 24, 0)
+				renderpos = renderpos + Vector(currCol * gutterX, (iv-1) * gutterY)
 
 				local iconrenderpos = renderpos + Vector(-23, ((height + 0) / 2) - 4)
 				local qtextrenderpos = renderpos + Vector(-26, -2)
@@ -1467,5 +1502,33 @@ function idesc:ttc(min, max, allow_mod, filter)
 	end
 	idesc:showEntries(entries)
 end
+
+--#region 사운드
+
+function idesc:cancelLoopSound()
+	if SFXManager():IsPlaying(idesc.SOUND_LIST_LOOP) then
+		SFXManager():Stop(idesc.SOUND_LIST_LOOP)
+	end
+end
+
+idesc:AddCallback("WakabaCallbacks.INVENTORY_DESCRIPTIONS_POST_LIST_OPEN", function()
+	if idesc:getOptions("invtogglesound") then
+		SFXManager():Play(idesc.SOUND_LIST_ON, idesc:getOptions("invtogglevolume") or 2)
+	end
+	if idesc:getOptions("invloopsound") then
+		SFXManager():Play(idesc.SOUND_LIST_LOOP, idesc:getOptions("invloopvolume") or 2, 2, true)
+	end
+end)
+
+idesc:AddCallback("WakabaCallbacks.INVENTORY_DESCRIPTIONS_POST_LIST_CLOSE", function()
+	if idesc:getOptions("invtogglesound") then
+		SFXManager():Play(idesc.SOUND_LIST_OFF, idesc:getOptions("invtogglevolume") or 2)
+	end
+	idesc:cancelLoopSound()
+end)
+
+--#endregion
+
+
 
 print("InvDesc "..currentStrVersion.." standalone Loaded")

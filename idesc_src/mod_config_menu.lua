@@ -189,6 +189,69 @@ MCM.AddSetting(
 		}
 	}
 )
+MCM.AddSetting(
+	"Inventory Desc",
+	{
+		Type = ModConfigMenu.OptionType.NUMBER,
+		CurrentSetting = function()
+			return idesc:getOptions("listoffsety")
+		end,
+		Minimum = -100,
+		Maximum = 200,
+		ModifyBy = 2,
+		Display = function()
+			return "List offset: " .. idesc:getOptions("listoffsety")
+		end,
+		OnChange = function(current)
+			idesc:setOptions("listoffsety", current)
+		end,
+		Info = {
+			"Top offset for list of items(Default = 36)",
+		}
+	}
+)
+MCM.AddSetting(
+	"Inventory Desc",
+	{
+		Type = ModConfigMenu.OptionType.NUMBER,
+		CurrentSetting = function()
+			return idesc:getOptions("invdescgutterx")
+		end,
+		Minimum = -5,
+		Maximum = 10,
+		ModifyBy = 1,
+		Display = function()
+			return "Item margin x: " .. idesc:getOptions("invdescgutterx")
+		end,
+		OnChange = function(current)
+			idesc:setOptions("invdescgutterx", current)
+		end,
+		Info = {
+			"X Margin list of items(Default = 0)",
+		}
+	}
+)
+MCM.AddSetting(
+	"Inventory Desc",
+	{
+		Type = ModConfigMenu.OptionType.NUMBER,
+		CurrentSetting = function()
+			return idesc:getOptions("invdescguttery")
+		end,
+		Minimum = -5,
+		Maximum = 10,
+		ModifyBy = 1,
+		Display = function()
+			return "Item margin y: " .. idesc:getOptions("invdescguttery")
+		end,
+		OnChange = function(current)
+			idesc:setOptions("invdescguttery", current)
+		end,
+		Info = {
+			"Y Margin list of items(Default = 0)",
+		}
+	}
+)
 
 MCM.AddSetting(
 	"Inventory Desc",
@@ -250,6 +313,119 @@ MCM.AddSetting(
 		}
 	}
 )
+MCM.AddSetting(
+	"Inventory Desc",
+	{
+		Type = ModConfigMenu.OptionType.NUMBER,
+		CurrentSetting = function()
+			return idesc:getOptions("listdimmeralpha")
+		end,
+		Minimum = 0,
+		Maximum = 1,
+		ModifyBy = 0.05,
+		Display = function()
+			return "Screen dim opacity: " .. idesc:getOptions("listdimmeralpha")
+		end,
+		OnChange = function(current)
+			idesc:setOptions("listdimmeralpha", current)
+		end,
+		Info = {
+			"Opacity to dim game screen while showing the list (Default = 0.5)",
+		}
+	}
+)
+
+	MCM.AddSetting(
+		"Inventory Desc",
+		{
+			Type = ModConfigMenu.OptionType.BOOLEAN,
+			CurrentSetting = function()
+				return idesc:getOptions("invtogglesound")
+			end,
+			Display = function()
+				local onOff = "False"
+				if idesc:getOptions("invtogglesound") then
+					onOff = "True"
+				end
+				return "Toggle Sound: " .. onOff
+			end,
+			OnChange = function(currentBool)
+				idesc:setOptions("invtogglesound", currentBool)
+			end,
+			Info = {
+				"Allow list toggle sound from Inventory Descriptions",
+			}
+		}
+	)
+	MCM.AddSetting(
+		"Inventory Desc",
+		{
+			Type = ModConfigMenu.OptionType.NUMBER,
+			CurrentSetting = function()
+				return idesc:getOptions("invtogglevolume")
+			end,
+			Minimum = 0,
+			Maximum = 4,
+			ModifyBy = 0.1,
+			Display = function()
+				return "Toggle Sound volume: " .. idesc:getOptions("invtogglevolume")
+			end,
+			OnChange = function(currentNum)
+				idesc:setOptions("invtogglevolume", currentNum)
+				SFXManager():Stop(SoundEffect.SOUND_PLOP)
+				SFXManager():Play(idesc.SOUND_LIST_ON, idesc:getOptions("invtogglevolume") or 2)
+			end,
+			Info = {
+				"Adjust volume for Inventory Descriptions toggle sounds",
+			}
+		}
+	)
+	MCM.AddSetting(
+		"Inventory Desc",
+		{
+			Type = ModConfigMenu.OptionType.BOOLEAN,
+			CurrentSetting = function()
+				return idesc:getOptions("invloopsound")
+			end,
+			Display = function()
+				local onOff = "False"
+				if idesc:getOptions("invloopsound") then
+					onOff = "True"
+				end
+				return "Loop Sound: " .. onOff
+			end,
+			OnChange = function(currentBool)
+				idesc:setOptions("invloopsound", currentBool)
+			end,
+			Info = {
+				"Allow list loop sound from Inventory Descriptions",
+				"Only active while list is on",
+			}
+		}
+	)
+	MCM.AddSetting(
+		"Inventory Desc",
+		{
+			Type = ModConfigMenu.OptionType.NUMBER,
+			CurrentSetting = function()
+				return idesc:getOptions("invloopvolume")
+			end,
+			Minimum = 0,
+			Maximum = 4,
+			ModifyBy = 0.1,
+			Display = function()
+				return "Loop Sound volume: " .. idesc:getOptions("invloopvolume")
+			end,
+			OnChange = function(currentNum)
+				idesc:setOptions("invloopvolume", currentNum)
+			end,
+			Info = {
+				"Adjust volume for Inventory Descriptions loop sounds",
+				"Only active while list is on",
+			}
+		}
+	)
+
 MCM.AddSpace("Inventory Desc")
 MCM.AddSetting(
 	"Inventory Desc",

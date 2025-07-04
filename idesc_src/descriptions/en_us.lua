@@ -541,6 +541,7 @@ for playertype, playerdesc in pairs(idesc.descriptions[desclang].playernotes) do
 	local desc = playerdesc.description
 	EID:addEntity(InvDescEIDType.PLAYER, InvDescEIDVariant.DEFAULT, playertype, playerdesc.name, desc, desclang)
 end
+EID:addEntity(InvDescEIDType.CURSE, -1, -1, "Curses")
 for curseid, cursedesc in pairs(idesc.descriptions[desclang].curses) do
 	local desc = cursedesc.description
 	EID:addEntity(InvDescEIDType.CURSE, InvDescEIDVariant.DEFAULT, curseid, cursedesc.name, desc, desclang)
